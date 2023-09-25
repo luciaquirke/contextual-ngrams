@@ -24,6 +24,7 @@ import plotly.graph_objects as go
 from neel_plotly import *
 import utils
 import probing_utils
+from utils import get_model, preload_models
 
 
 SEED = 42
@@ -33,32 +34,6 @@ def set_seeds():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
-
-
-def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
-    model = HookedTransformer.from_pretrained(
-        model_name,
-        checkpoint_index=checkpoint,
-        center_unembed=True,
-        center_writing_weights=True,
-        fold_ln=True,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-    )
-    return model
-
-
-def preload_models(model_name: str) -> int:
-    """Preload models into cache so we can iterate over them quickly and return the model checkpoint count."""
-    i = 0
-    try:
-        with tqdm(total=None) as pbar:
-            while True:
-                get_model(model_name, i)
-                i += 1
-                pbar.update(1)
-
-    except IndexError:
-        return i
 
 
 def load_language_data(data_path: Path) -> dict:
@@ -292,7 +267,7 @@ if __name__ == "__main__":
         help="Name of model from TransformerLens",
     )
     parser.add_argument("--dataset_dir", default="data/europarl")
-    parser.add_argument("--output_dir", default="feature_formation")
+    parser.add_argument("--output_dir", default="output")
 
     args = parser.parse_args()
 

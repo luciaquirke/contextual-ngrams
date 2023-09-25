@@ -21,20 +21,20 @@ import plotly.graph_objects as go
 
 from neel_plotly import *
 
+from utils import get_model
 
-def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
-    model = HookedTransformer.from_pretrained(
-        model_name,
-        checkpoint_index=checkpoint,
-        center_unembed=True,
-        center_writing_weights=True,
-        fold_ln=True,
-        device="cuda" if torch.cuda.is_available() else "cpu",
-    )
-    return model
+
+SEED = 42
+
+
+def set_seeds():
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
+    random.seed(SEED)
 
 
 def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
+    set_seeds()
     model = get_model(model_name, 0)
     with gzip.open(
             output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb"
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         default="EleutherAI/pythia-70m",
         help="Name of model from TransformerLens",
     )
-    parser.add_argument("--output_dir", default="feature_formation")
+    parser.add_argument("--output_dir", default="output")
 
     args = parser.parse_args()
 

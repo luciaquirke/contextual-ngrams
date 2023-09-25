@@ -2,6 +2,33 @@ import torch
 import plotly.express as px
 from einops import einsum
 from tqdm.auto import tqdm
+from transformer_lens import HookedTransformer
+
+
+def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
+    model = HookedTransformer.from_pretrained(
+        model_name,
+        checkpoint_index=checkpoint,
+        center_unembed=True,
+        center_writing_weights=True,
+        fold_ln=True,
+        device="cuda" if torch.cuda.is_available() else "cpu",
+    )
+    return model
+
+
+def preload_models(model_name: str) -> int:
+    """Preload models into cache so we can iterate over them quickly and return the model checkpoint count."""
+    i = 0
+    try:
+        with tqdm(total=None) as pbar:
+            while True:
+                get_model(model_name, i)
+                i += 1
+                pbar.update(1)
+
+    except IndexError:
+        return i
 
 
 def load_txt_data(path: str) -> list[str]:
