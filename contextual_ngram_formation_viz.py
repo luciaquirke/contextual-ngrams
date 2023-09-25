@@ -16,7 +16,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        default="EleutherAI/pythia-70m",
+        default="pythia-70m",
         help="Name of model from TransformerLens",
     )
     # parser.add_argument("--data_dir", default="data/europarl")

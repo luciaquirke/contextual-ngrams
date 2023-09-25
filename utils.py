@@ -1,4 +1,6 @@
 import torch
+from torch import Tensor
+from jaxtyping import Float, Int
 import plotly.express as px
 from einops import einsum
 from tqdm.auto import tqdm
