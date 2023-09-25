@@ -16,6 +16,8 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score, matthews_corrcoef
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -25,6 +27,7 @@ import probing_utils
 
 
 SEED = 42
+
 
 def set_seeds():
     torch.manual_seed(SEED)
@@ -58,14 +61,11 @@ def preload_models(model_name: str) -> int:
         return i
 
 
-def load_language_data() -> dict:
+def load_language_data(europarl_data_dir: Path) -> dict:
     """
     Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
     """
     lang_data = {}
-    lang_data["en"] = utils.load_json_data("data/english_europarl.json")[:200]
-
-    europarl_data_dir = Path("data/europarl/")
     for file in os.listdir(europarl_data_dir):
         if file.endswith(".txt"):
             lang = file.split("_")[0]
@@ -79,6 +79,17 @@ def load_language_data() -> dict:
 def train_probe(
     positive_data: torch.Tensor, negative_data: torch.Tensor
 ) -> tuple[float, float]:
+    def get_probe(x: np.array, y: np.array, max_iter=2000) -> LogisticRegression:
+        lr_model = LogisticRegression(max_iter=max_iter)
+        lr_model.fit(x, y)
+        return lr_model
+
+    def get_probe_score(lr_model: LogisticRegression, x: np.array, y: np.array) -> tuple[float, float]:
+        preds = lr_model.predict(x)
+        f1 = f1_score(y, preds)
+        mcc = matthews_corrcoef(y, preds)
+        return f1, mcc
+
     labels = np.concatenate([np.ones(len(positive_data)), np.zeros(len(negative_data))])
     data = np.concatenate([positive_data.cpu().numpy(), negative_data.cpu().numpy()])
     scaler = preprocessing.StandardScaler().fit(data)
@@ -86,8 +97,8 @@ def train_probe(
     x_train, x_test, y_train, y_test = train_test_split(
         data, labels, test_size=0.2, random_state=SEED
     )
-    probe = probing_utils.get_probe(x_train, y_train, max_iter=2000)
-    f1, mcc = probing_utils.get_probe_score(probe, x_test, y_test)
+    probe = get_probe(x_train, y_train, max_iter=2000)
+    f1, mcc = get_probe_score(probe, x_test, y_test)
     return f1, mcc
 
 
@@ -278,6 +289,7 @@ if __name__ == "__main__":
         default="EleutherAI/pythia-70m",
         help="Name of model from TransformerLens",
     )
+    parser.add_argument("--dataset_dir", default="data/europarl")
     parser.add_argument("--output_dir", default="feature_formation")
 
     args = parser.parse_args()
@@ -292,8 +304,8 @@ if __name__ == "__main__":
     num_checkpoints = preload_models(args.model)
 
     # Load probe training data
-    lang_data = load_language_data()
-
+    lang_data = load_language_data(Path(europarl_data_dir))
+    
     analyze_features(
         args.model, num_checkpoints, lang_data, Path(save_path)
     )

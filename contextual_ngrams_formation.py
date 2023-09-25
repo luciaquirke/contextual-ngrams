@@ -20,7 +20,7 @@ import plotly.express as px
 from nltk import ngrams
 
 from neel_plotly import *
-import haystack_utils
+import utils
 import probing_utils
 
 
@@ -65,13 +65,13 @@ def load_language_data() -> dict:
     Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
     """
     lang_data = {}
-    lang_data["en"] = haystack_utils.load_json_data("data/english_europarl.json")[:200]
+    lang_data["en"] = utils.load_json_data("data/english_europarl.json")[:200]
 
     europarl_data_dir = Path("data/europarl/")
     for file in os.listdir(europarl_data_dir):
         if file.endswith(".txt"):
             lang = file.split("_")[0]
-            lang_data[lang] = haystack_utils.load_txt_data(europarl_data_dir.joinpath(file))
+            lang_data[lang] = utils.load_txt_data(europarl_data_dir.joinpath(file))
 
     for lang in lang_data.keys():
         print(lang, len(lang_data[lang]))
@@ -98,7 +98,7 @@ def get_ngram_losses(
 ) -> pd.DataFrame:
     data = []
     for ngram in ngrams:
-        prompts = haystack_utils.generate_random_prompts(
+        prompts = utils.generate_random_prompts(
             ngram, model, common_tokens, 100, 20
         )
         loss = eval_prompts(prompts, model)
@@ -159,9 +159,9 @@ def eval_checkpoint(model: HookedTransformer, probe_df: pd.DataFrame, german_dat
 
 
 def get_common_tokens(model, prompts):
-    all_ignore, _ = haystack_utils.get_weird_tokens(model, plot_norms=False)    
+    all_ignore, _ = utils.get_weird_tokens(model, plot_norms=False)    
 
-    common_tokens = haystack_utils.get_common_tokens(
+    common_tokens = utils.get_common_tokens(
         prompts, model, all_ignore, k=100
     )
     return common_tokens
@@ -180,7 +180,7 @@ def build_dfs(
         model_name: HookedTransformer,
         lang_data: dict,
         probe_df: pd.DataFrame,
-        num_checkpoints: int 
+        num_checkpoints: int, 
         layer: int,
         neuron: int,
         ngrams: bool, 
@@ -217,7 +217,7 @@ def build_dfs(
         data.extend([german_ablated_loss, non_german_loss])
         context_neuron_data.append(data)
 
-        logit_attribution, labels = haystack_utils.pos_batch_DLA(german_data, model)
+        logit_attribution, labels = utils.pos_batch_DLA(german_data, model)
         logit_atts.append(logit_attribution.cpu().numpy())
 
     context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])

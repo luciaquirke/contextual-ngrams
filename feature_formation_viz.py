@@ -20,8 +20,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from neel_plotly import *
-import haystack_utils
-import probing_utils
 
 
 def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
