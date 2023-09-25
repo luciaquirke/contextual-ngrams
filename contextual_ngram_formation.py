@@ -172,9 +172,6 @@ def build_dfs(
         num_checkpoints: int, 
         layer: int,
         neuron: int,
-        ngrams: bool, 
-        dla: bool, 
-        lang_losses: bool, 
         save_path: Path 
     ):
     german_data = lang_data["de"]
@@ -221,6 +218,16 @@ def build_dfs(
         temp_df['checkpoint'] = [i] * len(logit_attribution)
         temp_df['index'] = range(len(logit_attribution))
         logit_attrs_df = pd.concat([logit_attrs_df, temp_df])
+
+    # Compress with gzip using high compression and save
+    with gzip.open(
+        save_path.joinpath("checkpoint_ablation_data.pkl.gz"), "wb", compresslevel=9
+    ) as f_out:
+        pickle.dump({
+            "neuron": context_neuron_df,
+            "ngram": ngram_loss_dfs,
+            "logit_attr": logit_attrs_df,
+        }, f_out)
     
 
 def load_probe_data(save_path):
@@ -241,7 +248,7 @@ def analyze_contextual_ngrams(
     lang_data = load_language_data(data_path)
     probe_df = load_probe_data(save_path)
 
-    build_dfs(model_name, lang_data, probe_df, num_checkpoints, neurons, ngrams, dla, lang_losses, save_path)
+    build_dfs(model_name, lang_data, probe_df, num_checkpoints, layer, neuron, save_path)
 
 
 if __name__ == "__main__":

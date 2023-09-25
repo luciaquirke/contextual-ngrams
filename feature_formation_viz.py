@@ -137,7 +137,6 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.write_image(image_dir.joinpath("layer_ablation_losses.png"))
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
