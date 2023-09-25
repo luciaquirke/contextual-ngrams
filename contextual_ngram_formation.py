@@ -34,15 +34,15 @@ def set_seeds():
     random.seed(SEED)
 
 
-def load_language_data(europarl_data_dir: Path) -> dict:
+def load_language_data(data_path: Path) -> dict:
     """
     Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
     """
     lang_data = {}
-    for file in os.listdir(europarl_data_dir):
+    for file in os.listdir(data_path):
         if file.endswith(".txt"):
             lang = file.split("_")[0]
-            lang_data[lang] = utils.load_txt_data(europarl_data_dir.joinpath(file))
+            lang_data[lang] = utils.load_txt_data(data_path.joinpath(file))
 
     for lang in lang_data.keys():
         print(lang, len(lang_data[lang]))
@@ -185,9 +185,12 @@ def build_dfs(
     common_tokens = get_common_tokens(temp_model, german_data)
     random_trigrams = get_random_trigrams(temp_model, german_data)
 
+    good_neurons = get_good_neurons(probe_df)
+
     ngram_loss_dfs = []
     context_neuron_data = []
     logit_attrs = []
+    good_neuron_ablation_data = []
 
     deactivate_neurons_fwd_hooks = get_deactivate_neurons_fwd_hooks(model, german_data, layer, neuron)
 
@@ -208,8 +211,25 @@ def build_dfs(
         logit_attribution, labels = utils.pos_batch_DLA(german_data, model)
         logit_attrs.append(logit_attribution.cpu().numpy())
 
+        for neuron_name in good_neurons:
+            good_layer, good_neuron = neuron_name[1:].split("N")
+            good_layer, good_neuron = int(good_layer), int(good_neuron)
+            activations = get_mean_activation(model, german_data, good_layer, good_neuron)
+            def tmp_hook(value, hook):
+                value[:, :, good_neuron] = activations
+                return value
+            tmp_hooks = [(f'blocks.{good_layer}.mlp.hook_post', tmp_hook)]
+            original_loss = eval_loss(model, english_data)
+            with model.hooks(tmp_hooks):
+                ablated_loss = eval_loss(model, english_data)
+            good_neuron_ablation_data.append([neuron_name, checkpoint, original_loss, ablated_loss])
+
     context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])
     context_neuron_df.to_csv(save_path.joinpath("checkpoint_eval.csv"), index=False)
+
+    good_neuron_ablation_df = pd.DataFrame(good_neuron_ablation_data, columns=["Label", "Checkpoint", "OriginalLoss", "AblatedLoss"])
+    good_neuron_ablation_df["AblationIncrease"] = good_neuron_ablation_df["AblatedLoss"] - good_neuron_ablation_df["OriginalLoss"]
+    good_neuron_ablation_df.to_csv("data/checkpoint_ablation_data.csv")
     
     logit_attrs_df = pd.DataFrame()
     for i, logit_attribution in enumerate(logit_attrs):
@@ -224,11 +244,19 @@ def build_dfs(
         save_path.joinpath("checkpoint_ablation_data.pkl.gz"), "wb", compresslevel=9
     ) as f_out:
         pickle.dump({
-            "neuron": context_neuron_df,
+            "ctx_neuron": context_neuron_df,
+            "good_neuron": good_neuron_ablation_df,
             "ngram": ngram_loss_dfs,
             "logit_attr": logit_attrs_df,
         }, f_out)
     
+
+def get_good_neurons(probe_df: pd.DataFrame):
+    neurons = probe_df[(probe_df["MCC"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "MCC"]].copy()
+    neurons = neurons.sort_values(by="MCC", ascending=False)
+    good_neurons = neurons["NeuronLabel"].unique()[:50]
+
+    return good_neurons
 
 def load_probe_data(save_path):
     with gzip.open(save_path.joinpath("_checkpoint_features.pkl.gz"), "rb") as f:

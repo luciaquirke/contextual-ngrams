@@ -129,7 +129,7 @@ if __name__ == "__main__":
         help="Name of model from TransformerLens",
     )
     parser.add_argument("--data_dir", default="data/europarl")
-    parser.add_argument("--output_dir", default="images")
+    parser.add_argument("--output_dir", default="output")
     parser.add_argument("--layer", default=3)
     parser.add_argument("--neuron", default=669)
 
@@ -137,6 +137,9 @@ if __name__ == "__main__":
 
     save_path = os.path.join(args.output_dir, args.model)
     os.makedirs(save_path, exist_ok=True)
+    # TODO use this for viz / clean up 
+    image_path = os.path.join(save_path, "images")
+    os.makedirs(image_path, exist_ok=True)
     
     analyze_gradients(args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir))
 
