@@ -1,0 +1,11 @@
+numpy
+pandas
+torch
+transformer_lens
+tqdm
+plotly.io
+ipywidgets
+IPython
+sklearn
+plotly
+nltk
