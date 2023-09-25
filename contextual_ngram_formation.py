@@ -261,7 +261,7 @@ if __name__ == "__main__":
         help="Name of model from TransformerLens",
     )
     parser.add_argument("--data_dir", default="data/europarl")
-    parser.add_argument("--output_dir", default="contextual_ngrams_formation")
+    parser.add_argument("--output_dir", default="output")
     parser.add_argument("--layer", default=3)
     parser.add_argument("--neuron", default=669)
 

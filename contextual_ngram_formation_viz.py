@@ -19,6 +19,7 @@ if __name__ == "__main__":
         default="EleutherAI/pythia-70m",
         help="Name of model from TransformerLens",
     )
+    # parser.add_argument("--data_dir", default="data/europarl")
     parser.add_argument("--output_dir", default="output")
 
     args = parser.parse_args()
