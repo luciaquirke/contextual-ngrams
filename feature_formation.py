@@ -61,15 +61,15 @@ def preload_models(model_name: str) -> int:
         return i
 
 
-def load_language_data(europarl_data_dir: Path) -> dict:
+def load_language_data(data_path: Path) -> dict:
     """
     Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
     """
     lang_data = {}
-    for file in os.listdir(europarl_data_dir):
+    for file in os.listdir(data_path):
         if file.endswith(".txt"):
             lang = file.split("_")[0]
-            lang_data[lang] = utils.load_txt_data(europarl_data_dir.joinpath(file))
+            lang_data[lang] = utils.load_txt_data(data_path.joinpath(file))
 
     for lang in lang_data.keys():
         print(lang, len(lang_data[lang]))
@@ -237,7 +237,7 @@ def analyze_features(
     lang_loss_dfs = []
     with tqdm(total=num_checkpoints * n_layers) as pbar:
         for checkpoint in range(num_checkpoints):
-            model = get_model(model_name, checkpoint)
+            model = get_model(model_name, checkpoint)            
             for layer in range(n_layers):
                 partial_probe_df = get_layer_probe_performance(
                     model, checkpoint, layer, german_data, non_german_data
@@ -249,22 +249,24 @@ def analyze_features(
                 )
 
                 layer_ablation_dfs.append(partial_layer_ablation_df)
-                lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
-
-                # Save progress to allow for checkpointing the analysis
-                with open(
-                    output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "wb"
-                ) as f:
-                    pickle.dump(
-                        {
-                            "probe": probe_dfs,
-                            "layer_ablation": layer_ablation_dfs,
-                            "lang_loss": lang_loss_dfs,
-                        },
-                        f,
-                    )
-
                 pbar.update(1)
+                
+            lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
+
+            # Save progress to allow for checkpointing the analysis
+            with open(
+                output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "wb"
+            ) as f:
+                pickle.dump(
+                    {
+                        "probe": probe_dfs,
+                        "layer_ablation": layer_ablation_dfs,
+                        "lang_loss": lang_loss_dfs,
+                    },
+                    f,
+                )
+
+                
 
     # Open the pickle file
     with open(output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb") as f:
@@ -286,7 +288,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        default="EleutherAI/pythia-70m",
+        default="pythia-70m",
         help="Name of model from TransformerLens",
     )
     parser.add_argument("--dataset_dir", default="data/europarl")
@@ -304,7 +306,7 @@ if __name__ == "__main__":
     num_checkpoints = preload_models(args.model)
 
     # Load probe training data
-    lang_data = load_language_data(Path(europarl_data_dir))
+    lang_data = load_language_data(Path(args.dataset_dir))
     
     analyze_features(
         args.model, num_checkpoints, lang_data, Path(save_path)

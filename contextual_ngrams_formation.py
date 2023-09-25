@@ -9,6 +9,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 import torch
+import einops
 from transformer_lens import HookedTransformer
 from tqdm.auto import tqdm
 import plotly.io as pio
@@ -21,17 +22,15 @@ from nltk import ngrams
 
 from neel_plotly import *
 import utils
-import probing_utils
 
 
 SEED = 42
+
 
 def set_seeds():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
-
-    pio.renderers.default = "notebook_connected+notebook"
 
 
 def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
@@ -60,14 +59,11 @@ def preload_models(model_name: str) -> int:
         return i
 
 
-def load_language_data() -> dict:
+def load_language_data(europarl_data_dir: Path) -> dict:
     """
     Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
     """
     lang_data = {}
-    lang_data["en"] = utils.load_json_data("data/english_europarl.json")[:200]
-
-    europarl_data_dir = Path("data/europarl/")
     for file in os.listdir(europarl_data_dir):
         if file.endswith(".txt"):
             lang = file.split("_")[0]
@@ -84,10 +80,27 @@ def eval_prompts(prompts, model, pos=-1):
     return loss
 
 
-def deactivate_neurons_hook(value, hook):
-    value[:, :, NEURON] = MEAN_ACTIVATION_INACTIVE
-    return value
-deactivate_neurons_fwd_hooks=[(f'blocks.{LAYER}.mlp.hook_post', deactivate_neurons_hook)]
+def get_deactivate_neurons_fwd_hooks(model: HookedTransformer, prompts: list[str], layer: int, neuron: int):
+    mean_activation_inactive = get_mean_activation(model, data, layer, neuron)
+    def deactivate_neurons_hook(value, hook):
+        value[:, :, neuron] = mean_activation_inactive
+        return value
+
+    return [(f'blocks.{layer}.mlp.hook_post', deactivate_neurons_hook)]
+
+
+def get_mean_activation(
+    model: HookedTransformer, prompts: list[str], layer: int, neuron: int
+) -> torch.Tensor:
+    act_label = f"blocks.{layer}.mlp.hook_post"
+    acts = []
+    for prompt in prompts:
+        with model.hooks([(act_label, save_activation)]):
+            model(prompt)
+            act = model.hook_dict[act_label].ctx["activation"][:, 10:400, neuron]
+        act = einops.rearrange(act, "batch pos -> (batch pos)")
+        acts.extend(act.tolist())
+    return np.mean(acts)
 
 
 def get_ngram_losses(
@@ -95,6 +108,7 @@ def get_ngram_losses(
     checkpoint: int,
     ngrams: list[str],
     common_tokens: list[str],
+    fwd_hooks: list[tuple[str, callable]],
 ) -> pd.DataFrame:
     data = []
     for ngram in ngrams:
@@ -102,7 +116,7 @@ def get_ngram_losses(
             ngram, model, common_tokens, 100, 20
         )
         loss = eval_prompts(prompts, model)
-        with model.hooks(deactivate_neurons_fwd_hooks):
+        with model.hooks(fwd_hooks):
             ablated_loss = eval_prompts(prompts, model)
         data.append([loss, ablated_loss, ablated_loss - loss, checkpoint, ngram])
 
@@ -201,13 +215,15 @@ def build_dfs(
 
     ngram_loss_dfs = []
     context_neuron_data = []
-    logit_atts = []
+    logit_attrs = []
+
+    deactivate_neurons_fwd_hooks = get_deactivate_neurons_fwd_hooks(model, german_data, layer, neuron)
 
     for checkpoint in tqdm(range(num_checkpoints)):
         model = get_model(checkpoint)
 
         ngram_loss_dfs.append(
-            get_ngram_losses(model, checkpoint, random_trigrams, common_tokens)
+            get_ngram_losses(model, checkpoint, random_trigrams, common_tokens, deactivate_neurons_fwd_hooks)
         )
 
         data = eval_checkpoint(model, probe_df, german_data, checkpoint, layer, neuron)
@@ -218,10 +234,18 @@ def build_dfs(
         context_neuron_data.append(data)
 
         logit_attribution, labels = utils.pos_batch_DLA(german_data, model)
-        logit_atts.append(logit_attribution.cpu().numpy())
+        logit_attrs.append(logit_attribution.cpu().numpy())
 
     context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])
     context_neuron_df.to_csv(save_path.joinpath("checkpoint_eval.csv"), index=False)
+    
+    logit_attrs_df = pd.DataFrame()
+    for i, logit_attribution in enumerate(logit_attrs):
+        temp_df = pd.DataFrame()
+        temp_df['logit_attribution'] = logit_attribution
+        temp_df['checkpoint'] = [i] * len(logit_attribution)
+        temp_df['index'] = range(len(logit_attribution))
+        logit_attrs_df = pd.concat([logit_attrs_df, temp_df])
     
 
 def load_probe_data(save_path):
@@ -232,22 +256,17 @@ def load_probe_data(save_path):
 
 def analyze_contextual_ngrams(
         model_name: str, 
-        neurons: list[tuple[int, int]], 
-        ngrams: bool, 
-        dla: bool, 
-        lang_losses: bool, 
-        save_path: Path
+        layer: int,
+        neuron: int,
+        save_path: Path,
+        data_path: Path
     ):
     set_seeds()
     num_checkpoints = preload_models(model_name)
-    lang_data = load_language_data()
+    lang_data = load_language_data(data_path)
     probe_df = load_probe_data(save_path)
 
     build_dfs(model_name, lang_data, probe_df, num_checkpoints, neurons, ngrams, dla, lang_losses, save_path)
-
-
-def tuple_list_type(value):
-    return [tuple(map(int, t.split(','))) for t in value.split(' ')]
 
 
 if __name__ == "__main__":
@@ -256,21 +275,18 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        default="EleutherAI/pythia-70m",
+        default="pythia-70m",
         help="Name of model from TransformerLens",
     )
+    parser.add_argument("--data_dir", default="data/europarl")
     parser.add_argument("--output_dir", default="contextual_ngrams_formation")
-    parser.add_argument("--neurons", default=[(3, 669)], type=tuple_list_type, 
-                        help="Space delimited list of neurons to analyze. \
-                        Each neuron is a comma delimited tuple of layer_index,neuron_index.")
-    parser.add_argument("--ngrams", default=True)
-    parser.add_argument("--dla", default=True)
-    parser.add_argument("--lang_losses", default=True)
+    parser.add_argument("--layer", default=3)
+    parser.add_argument("--neuron", default=669)
 
     args = parser.parse_args()
 
     save_path = os.path.join(args.output_dir, args.model)
     os.makedirs(save_path, exist_ok=True)
     
-    analyze_contextual_ngrams(args.model, args.neurons, args.ngrams, args.dla, args.lang_losses, Path(save_path))
+    analyze_contextual_ngrams(args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir))
 
