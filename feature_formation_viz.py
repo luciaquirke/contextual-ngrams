@@ -8,14 +8,9 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import torch
-from einops import einops
-from transformer_lens import HookedTransformer
-from tqdm.auto import tqdm
 import plotly.io as pio
 import ipywidgets as widgets
 from IPython.display import display, HTML
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -37,11 +32,9 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     set_seeds()
     model = get_model(model_name, 0)
     with gzip.open(
-            output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb"
+            output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "rb"
         ) as f:
-        data = pickle.load(f)
-
-    probe_df = data['probe']
+        probe_df = pickle.load(f)
 
     checkpoints = []
     top_probe = []
@@ -121,11 +114,15 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig = px.line(
         context_neuron_df,
         x="Checkpoint",
-        y=["MeanGermanActivation", "MeanEnglishActivation"],
+        y=["MeanGermanActivation", "MeanNonGermanActivation"],
     )
     fig.write_image(image_dir.joinpath("mean_activations.png"))
 
-    layer_ablation_df = data['layer_ablation']
+    with gzip.open(
+        output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "rb"
+    ) as f:
+        layer_ablation_df = pickle.load(f)
+    
     fig = px.line(
         layer_ablation_df.groupby(["Checkpoint", "Layer"]).mean().reset_index(),
         x="Checkpoint",
