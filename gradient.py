@@ -70,8 +70,9 @@ def get_good_mcc_neurons(save_path: Path):
     return good_neurons
 
 
-def save_figures(checkpoint_df: pd.DataFrame, model_name: str, good_neurons, output_path: Path):
+def save_figures(model_name: str, checkpoint_df: pd.DataFrame, output_path: Path):
     model = get_model(model_name, 0)
+    good_neurons = get_good_mcc_neurons(output_path)
 
     fig = px.scatter(checkpoint_df.groupby("Label").mean().reset_index(), x="GermanGradients", y="NonGermanGradients", color="Checkpoint", 
             height=800, width=1000,
@@ -120,9 +121,7 @@ def analyze_gradients(
 ):
     num_checkpoints = preload_models(model_name)
     lang_data = load_language_data(data_path)
-    checkpoint_df = get_checkpoints_df(model_name, num_checkpoints, lang_data)
-    good_neurons = get_good_mcc_neurons(save_path)
-    save_figures(checkpoint_df, model_name, good_neurons, save_path)
+    return get_checkpoints_df(model_name, num_checkpoints, lang_data)
 
 
 if __name__ == "__main__":
@@ -147,5 +146,6 @@ if __name__ == "__main__":
     image_path = os.path.join(save_path, "images")
     os.makedirs(image_path, exist_ok=True)
     
-    analyze_gradients(args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir))
+    checkpoints_df = analyze_gradients(args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir))
+    save_figures(args.model, checkpoint_df, save_path)
 
