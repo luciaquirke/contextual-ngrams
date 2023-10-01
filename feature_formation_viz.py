@@ -61,10 +61,10 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         "neurons with an MCC > 0.85 for German text recognition at any point during training.",
     )
 
-    good_neurons = accurate_neurons["NeuronLabel"].unique()[:50]
+    good_mcc_neurons = accurate_neurons["NeuronLabel"].unique()[:50]
 
     # Melt the DataFrame
-    probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_neurons)].melt(id_vars=['Checkpoint'], var_name='NeuronLabel', value_vars="F1", value_name='F1 score')
+    probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_mcc_neurons)].melt(id_vars=['Checkpoint'], var_name='NeuronLabel', value_vars="F1", value_name='F1 score')
     probe_df_melt['F1 score'] = pd.to_numeric(probe_df_melt['F1 score'], errors='coerce')
 
     # Calculate percentiles at each x-coordinate
@@ -94,21 +94,42 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
 
     get_mean_non_german(probe_df, 669, 3, 140)
 
-    layer_vals = np.random.randint(0, model.cfg.n_layers, good_neurons.size)
-    neuron_vals = np.random.randint(0, model.cfg.d_mlp, good_neurons.size)
+    layer_vals = np.random.randint(0, model.cfg.n_layers, good_mcc_neurons.size)
+    neuron_vals = np.random.randint(0, model.cfg.d_mlp, good_mcc_neurons.size)
     random_neurons = probe_df[
         (probe_df["Layer"].isin(layer_vals)) & (probe_df["Neuron"].isin(neuron_vals))
     ]
     random_neurons = random_neurons["NeuronLabel"].unique()
 
     fig = px.line(
-        probe_df[probe_df["NeuronLabel"].isin(good_neurons)],
+        probe_df[probe_df["NeuronLabel"].isin(good_mcc_neurons)],
         x="Checkpoint",
         y="MCC",
         color="NeuronLabel",
         title="Neurons with max MCC >= 0.85",
     )
     fig.write_image(image_dir.joinpath("high_mcc_neurons.png"))
+
+    accurate_f1_neurons = probe_df[
+        (probe_df["F1"] > 0.85)
+        & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
+    ][["NeuronLabel", "F1"]].copy()
+    accurate_f1_neurons = accurate_f1_neurons.sort_values(by="F1", ascending=False)
+    print(
+        len(accurate_f1_neurons["NeuronLabel"].unique()),
+        "neurons with an F1 > 0.85 for German text recognition at any point during training.",
+    )
+    good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()[:50]
+    probe_df.sort_values(by=["Checkpoint", "NeuronLabel"], inplace=True)
+    fig = px.line(
+        probe_df[probe_df["NeuronLabel"].isin(good_f1_neurons)], 
+        x="Checkpoint", 
+        y="F1", 
+        color="NeuronLabel", 
+        title="Neurons with max F1 >= 0.85", 
+        width=800
+    )
+    fig.save_image(image_dir.joinpath("high_f1_neurons.png"))
 
     context_neuron_df = probe_df[probe_df["NeuronLabel"] == "L3N669"]
     fig = px.line(

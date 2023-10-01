@@ -18,13 +18,10 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, matthews_corrcoef
-import plotly.express as px
-import plotly.graph_objects as go
 
 from neel_plotly import *
 import utils
-import probing_utils
-from utils import get_model, preload_models
+from utils import get_model, preload_models, load_language_data
 
 
 SEED = 42
@@ -34,21 +31,6 @@ def set_seeds():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
-
-
-def load_language_data(data_path: Path) -> dict:
-    """
-    Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
-    """
-    lang_data = {}
-    for file in os.listdir(data_path):
-        if file.endswith(".txt"):
-            lang = file.split("_")[0]
-            lang_data[lang] = utils.load_txt_data(data_path.joinpath(file))
-
-    for lang in lang_data.keys():
-        print(lang, len(lang_data[lang]))
-    return lang_data
 
 
 def train_probe(
@@ -203,7 +185,8 @@ def analyze_features(
     n_layers = model.cfg.n_layers
 
     german_data = lang_data["de"]
-    non_german_data = np.concatenate([lang_data[lang] for lang in lang_data.keys() if lang != "de"])
+    non_german_data = lang_data["en"]
+    # non_german_data = np.concatenate([lang_data[lang] for lang in lang_data.keys() if lang != "de"])
     np.random.shuffle(non_german_data)
     non_german_data = non_german_data[:200].tolist()
 

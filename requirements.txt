@@ -1,7 +1,9 @@
 numpy
 pandas
 torch
+jaxtyping
 transformer_lens
+einops
 tqdm
 plotly.io
 ipywidgets

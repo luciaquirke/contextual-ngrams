@@ -1,4 +1,10 @@
+import random
+import argparse
+import gzip
 import pickle
+from pathlib import Path
+import os
+
 import numpy as np
 import pandas as pd
 import torch
@@ -6,10 +12,10 @@ from tqdm.auto import tqdm
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import get_model, preload_models
+from utils import get_model, preload_models, load_language_data
 
 
-def get_checkpoints_df(num_checkpoints: int, hook_name="post"):
+def get_checkpoints_df(model_name: str, num_checkpoints: int, lang_data: dict, hook_name="post"):
     def get_backward_activations(prompts, model, layer, neurons):
         bwd_activations = []
         hook_name = f"blocks.{layer}.mlp.hook_{hook_name}"
@@ -23,15 +29,17 @@ def get_checkpoints_df(num_checkpoints: int, hook_name="post"):
                 x.backward()
         return torch.concat(bwd_activations, dim=0).mean(0).tolist()
     
+    model = get_model(model_name, 0)
+
     all_checkpoint_dfs = []
-    checkpoints = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,22, 23, 24, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, NUM_CHECKPOINTS]
+    checkpoints = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,22, 23, 24, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, num_checkpoints-1]
     with tqdm(total=len(checkpoints)*model.cfg.n_layers) as pbar:
         for checkpoint in checkpoints:
             model = get_model(checkpoint)
             for layer in range(model.cfg.n_layers):
                 neurons = [i for i in range(model.cfg.d_mlp)]
-                bwd_activations_german = get_backward_activations(german_data[:40], model, layer, neurons)
-                bwd_activations_english = get_backward_activations(english_data[:60], model, layer, neurons)
+                bwd_activations_german = get_backward_activations(lang_data['de'][:40], model, layer, neurons)
+                bwd_activations_english = get_backward_activations(lang_data['en'][:60], model, layer, neurons)
                 check_point_df = pd.DataFrame({
                     "GermanGradients": bwd_activations_german, "EnglishGradients": bwd_activations_english, 
                     "Neuron": neurons, "Layer": layer, "Checkpoint": checkpoint, "Label": [f"L{layer}N{i}" for i in neurons]})
@@ -49,12 +57,11 @@ def load_checkpoints_df(hook_name="post"):
     return pd.read_csv(f"./data/gradients_{hook_name}.csv")
 
 
-def get_good_neurons(model_name: str):
+def get_good_mcc_neurons(save_path: Path):
     with gzip.open(
-        output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb"
+        save_path.joinpath("checkpoint_probe_df.pkl.gz"), "rb"
     ) as f:
-        data = pickle.load(f)
-    probe_df = data['probe']
+        probe_df = pickle.load(f)
 
     neurons = probe_df[(probe_df["MCC"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "MCC"]].copy()
     neurons = neurons.sort_values(by="MCC", ascending=False)
@@ -63,7 +70,9 @@ def get_good_neurons(model_name: str):
     return good_neurons
 
 
-def save_figures(checkpoint_df: pd.DataFrame, good_neurons, output_path: Path):
+def save_figures(checkpoint_df: pd.DataFrame, model_name: str, good_neurons, output_path: Path):
+    model = get_model(model_name, 0)
+
     fig = px.scatter(checkpoint_df.groupby("Label").mean().reset_index(), x="GermanGradients", y="NonGermanGradients", color="Checkpoint", 
             height=800, width=1000,
             hover_name="Label", title="German vs NonGerman Backward Activations")
@@ -78,10 +87,6 @@ def save_figures(checkpoint_df: pd.DataFrame, good_neurons, output_path: Path):
 
     fig = px.line(checkpoint_df[checkpoint_df["Label"]=="L0N341"], y=["GradientDiff", "NonGermanGradients", "GermanGradients"], x="Checkpoint", width=800, title="Gradient L3N669 between NonGerman and German", facet_col="Layer", facet_col_wrap=3)
     fig.save_image(output_path.joinpath("mean_neuron_gradient_diff_L3N669.png"))
-
-    df.sort_values(by=["Checkpoint", "NeuronLabel"], inplace=True)
-    fig = px.line(df[df["NeuronLabel"].isin(good_neurons)], x="Checkpoint", y="F1", color="NeuronLabel", title="Top german context neurons", width=800)
-    fig.save_image(output_path.joinpath("top_german_ctx_neurons.png"))
 
     checkpoint_df.sort_values(by=["Checkpoint", "Label"], inplace=True)
     fig = px.line(checkpoint_df[checkpoint_df["Label"].isin(good_neurons)], y="GradientDiff", x="Checkpoint", color="Label", width=800, title="Gradient difference NonGerman-German (post)")
@@ -114,9 +119,10 @@ def analyze_gradients(
     data_path: Path
 ):
     num_checkpoints = preload_models(model_name)
-    checkpoint_df = get_checkpoints_df(num_checkpoints)
-    good_neurons = get_good_neurons(model_name)
-    save_figures(checkpoint_df, good_neurons, save_path)
+    lang_data = load_language_data(data_path)
+    checkpoint_df = get_checkpoints_df(model_name, num_checkpoints, lang_data)
+    good_neurons = get_good_mcc_neurons(save_path)
+    save_figures(checkpoint_df, model_name, good_neurons, save_path)
 
 
 if __name__ == "__main__":

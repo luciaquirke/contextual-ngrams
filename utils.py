@@ -1,3 +1,6 @@
+from pathlib import Path
+import os
+
 import torch
 from torch import Tensor
 from jaxtyping import Float, Int
@@ -43,6 +46,21 @@ def load_json_data(path: str) -> list[str]:
         return json.load(f)
 
 
+def load_language_data(data_path: Path) -> dict:
+    """
+    Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
+    """
+    lang_data = {}
+    for file in os.listdir(data_path):
+        if file.endswith(".txt"):
+            lang = file.split("_")[0]
+            lang_data[lang] = load_txt_data(data_path.joinpath(file))
+
+    for lang in lang_data.keys():
+        print(lang, len(lang_data[lang]))
+    return lang_data
+
+
 def pos_batch_DLA(tokens: Tensor, model: HookedTransformer, pos=-1) -> tuple[Float[Tensor, "component"], list[str]]:
     '''Direct logit attribution for a batch of tokens.'''
     answers = tokens[:, pos]
@@ -52,6 +70,11 @@ def pos_batch_DLA(tokens: Tensor, model: HookedTransformer, pos=-1) -> tuple[Flo
     scaled_residual_stack = cache.apply_ln_to_stack(accumulated_residual, layer = -1, pos_slice=pos-1)
     logit_attribution = einsum(scaled_residual_stack, answer_residual_directions, "component batch d_model, batch d_model -> batch component")
     return logit_attribution.mean(0), labels
+
+
+def get_random_selection(tensor: torch.Tensor, n=12):
+    indices = torch.randint(0, len(tensor), (n,))
+    return tensor[indices]
 
 
 def generate_random_prompts(end_string, model, random_tokens, n=50, length=12):
