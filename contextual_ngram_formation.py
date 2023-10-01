@@ -15,14 +15,11 @@ from tqdm.auto import tqdm
 import plotly.io as pio
 import ipywidgets as widgets
 from IPython.display import display, HTML
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
-import plotly.express as px
 from nltk import ngrams
 
 from neel_plotly import *
 import utils
-from utils import get_model, preload_models
+from utils import get_model, preload_models, load_language_data
 
 
 SEED = 42
@@ -34,21 +31,6 @@ def set_seeds():
     random.seed(SEED)
 
 
-def load_language_data(data_path: Path) -> dict:
-    """
-    Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
-    """
-    lang_data = {}
-    for file in os.listdir(data_path):
-        if file.endswith(".txt"):
-            lang = file.split("_")[0]
-            lang_data[lang] = utils.load_txt_data(data_path.joinpath(file))
-
-    for lang in lang_data.keys():
-        print(lang, len(lang_data[lang]))
-    return lang_data
-
-
 def eval_prompts(prompts, model, pos=-1):
     '''Mean loss at position in prompts'''
     loss = model(prompts, return_type="loss", loss_per_token=True)[:, pos].mean().item()
@@ -56,12 +38,17 @@ def eval_prompts(prompts, model, pos=-1):
 
 
 def get_deactivate_neurons_fwd_hooks(model: HookedTransformer, prompts: list[str], layer: int, neuron: int):
-    mean_activation_inactive = get_mean_activation(model, data, layer, neuron)
+    mean_activation_inactive = get_mean_activation(model, prompts, layer, neuron)
     def deactivate_neurons_hook(value, hook):
         value[:, :, neuron] = mean_activation_inactive
         return value
 
     return [(f'blocks.{layer}.mlp.hook_post', deactivate_neurons_hook)]
+
+
+def save_activation(value, hook):
+    hook.ctx['activation'] = value
+    return value
 
 
 def get_mean_activation(
@@ -175,12 +162,9 @@ def build_dfs(
         save_path: Path 
     ):
     german_data = lang_data["de"]
-    non_german_data = np.concatenate([lang_data[lang] for lang in lang_data.keys() if lang != "de"])
-    np.random.shuffle(non_german_data)
-    non_german_data = non_german_data[:200].tolist()
+    non_german_data = lang_data["en"]
 
     temp_model = get_model(model_name, 0)
-    n_layers = temp_model.cfg.n_layers
 
     common_tokens = get_common_tokens(temp_model, german_data)
     random_trigrams = get_random_trigrams(temp_model, german_data)
@@ -219,9 +203,9 @@ def build_dfs(
                 value[:, :, good_neuron] = activations
                 return value
             tmp_hooks = [(f'blocks.{good_layer}.mlp.hook_post', tmp_hook)]
-            original_loss = eval_loss(model, english_data)
+            original_loss = eval_loss(model, non_german_data)
             with model.hooks(tmp_hooks):
-                ablated_loss = eval_loss(model, english_data)
+                ablated_loss = eval_loss(model, non_german_data)
             good_neuron_ablation_data.append([neuron_name, checkpoint, original_loss, ablated_loss])
 
     context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])
@@ -258,10 +242,10 @@ def get_good_neurons(probe_df: pd.DataFrame):
 
     return good_neurons
 
+
 def load_probe_data(save_path):
-    with gzip.open(save_path.joinpath("_checkpoint_features.pkl.gz"), "rb") as f:
-        feature_data = pickle.load(f)
-    return feature_data['probe']
+    with gzip.open(save_path.joinpath("checkpoint_probe_df.pkl.gz"), "rb") as f:
+        return pickle.load(f)
 
 
 def analyze_contextual_ngrams(

@@ -89,8 +89,8 @@ def get_layer_probe_performance(
     model: HookedTransformer,
     checkpoint: int,
     layer: int,
-    german_data: np.array,
-    non_german_data: np.array,
+    german_data: list[str],
+    non_german_data: list[str],
 ) -> pd.DataFrame:
     """Probe performance for each neuron."""
 
@@ -187,8 +187,8 @@ def analyze_features(
     german_data = lang_data["de"]
     non_german_data = lang_data["en"]
     # non_german_data = np.concatenate([lang_data[lang] for lang in lang_data.keys() if lang != "de"])
-    np.random.shuffle(non_german_data)
-    non_german_data = non_german_data[:200].tolist()
+    # np.random.shuffle(non_german_data)
+    # non_german_data = non_german_data[:200].tolist()
 
     probe_dfs = []
     layer_ablation_dfs = []
