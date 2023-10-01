@@ -31,6 +31,8 @@ def set_seeds():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
+    torch.autograd.set_grad_enabled(False)
+    torch.set_grad_enabled(False)
 
 
 def train_probe(
