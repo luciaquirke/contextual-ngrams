@@ -169,7 +169,7 @@ def build_dfs(
     common_tokens = get_common_tokens(temp_model, german_data)
     random_trigrams = get_random_trigrams(temp_model, german_data)
 
-    good_neurons = get_good_neurons(probe_df)
+    good_neurons = get_good_mcc_neurons(probe_df)
 
     ngram_loss_dfs = []
     context_neuron_data = []
@@ -235,7 +235,7 @@ def build_dfs(
         }, f_out)
     
 
-def get_good_neurons(probe_df: pd.DataFrame):
+def get_good_mcc_neurons(probe_df: pd.DataFrame):
     neurons = probe_df[(probe_df["MCC"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "MCC"]].copy()
     neurons = neurons.sort_values(by="MCC", ascending=False)
     good_neurons = neurons["NeuronLabel"].unique()[:50]
