@@ -54,7 +54,7 @@ def main(model_name: str, save_path: Path, output_path: Path):
     for layer in layers:
         ablate_english_hooks += get_layer_ablation_hook(layer_ablations[layer]["Neurons"], layer_ablations[layer]["German"], layer)
 
-    model = get_model(checkpoint)
+    model = get_model(model_name, checkpoint)
     german_loss = eval_loss(model, german_data[:200], mean=False)
     with model.hooks(ablate_german_hooks):
         german_loss_ablated = eval_loss(model, german_data[:200], mean=False)

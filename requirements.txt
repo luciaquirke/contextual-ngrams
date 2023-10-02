@@ -11,3 +11,4 @@ IPython
 sklearn
 plotly
 nltk
+kaleido

@@ -4,12 +4,13 @@ import pickle
 import gzip
 import argparse
 import plotly.express as px
+import pandas as pd
 
 
 def get_good_mcc_neurons(probe_df: pd.DataFrame):
     neurons = probe_df[(probe_df["MCC"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "MCC"]].copy()
     neurons = neurons.sort_values(by="MCC", ascending=False)
-    good_neurons = neurons["NeuronLabel"].unique()[:50]
+    good_neurons = neurons["NeuronLabel"].unique()[:10]
 
     return good_neurons
 
@@ -27,7 +28,7 @@ def load_ablation_analysis():
 
 def produce_images(model_name: str, save_data_path: Path, save_image_path: Path):
     with gzip.open(
-        save_path.joinpath("checkpoint_ablation_data.pkl.gz"), "rb", compresslevel=9
+        save_data_path.joinpath("checkpoint_ablation_data.pkl.gz"), "rb", compresslevel=9
     ) as f:
         data = pickle.load(f)
     df = data['ngram']
@@ -39,9 +40,10 @@ def produce_images(model_name: str, save_data_path: Path, save_image_path: Path)
     probe_df = load_probe_data(save_data_path)
     good_neurons = get_good_mcc_neurons(probe_df)
     ablation_df = load_ablation_analysis()
+    print(ablation_df.head())
     ablation_df.sort_values(by=["Checkpoint", "Label"], inplace=True)
     fig = px.line(ablation_df[ablation_df["Label"].isin(good_neurons)], x="Checkpoint", y="AblationIncrease", color="Label", title="Ablation Increase on German prompts", width=800)
-    fig.save_image(save_image_path.joinpath("top_ctx_neurons_ablation_increase_german_prompts.png"))
+    fig.write_image(save_image_path.joinpath("top_ctx_neurons_ablation_increase_german_prompts.png"))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

@@ -29,6 +29,8 @@ def set_seeds():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
+    torch.autograd.set_grad_enabled(False)
+    torch.set_grad_enabled(False)
 
 
 def eval_prompts(prompts, model, pos=-1):
@@ -128,7 +130,6 @@ def eval_loss(model, data, mean=True):
 
 
 def eval_checkpoint(model: HookedTransformer, probe_df: pd.DataFrame, german_data: list[str], checkpoint: int, layer: int, neuron: int):
-    model = get_model(checkpoint)
     german_loss = eval_loss(model, german_data)
     f1, mcc = probe_df[(probe_df['Checkpoint']==checkpoint)&(probe_df['Layer']==layer)&(probe_df['Neuron']==neuron)][['F1', 'MCC']].values[0]
     return [checkpoint, german_loss, f1, mcc]
@@ -164,7 +165,7 @@ def build_dfs(
     german_data = lang_data["de"]
     non_german_data = lang_data["en"]
 
-    temp_model = get_model(model_name, 0)
+    model = get_model(model_name, 0)
 
     common_tokens = get_common_tokens(temp_model, german_data)
     random_trigrams = get_random_trigrams(temp_model, german_data)
@@ -178,8 +179,8 @@ def build_dfs(
 
     deactivate_neurons_fwd_hooks = get_deactivate_neurons_fwd_hooks(model, german_data, layer, neuron)
 
-    for checkpoint in tqdm(range(num_checkpoints)):
-        model = get_model(checkpoint)
+    for checkpoint in tqdm(range(0, num_checkpoints, 10)):
+        model = get_model(model_name, checkpoint)
 
         ngram_loss_dfs.append(
             get_ngram_losses(model, checkpoint, random_trigrams, common_tokens, deactivate_neurons_fwd_hooks)
@@ -198,14 +199,14 @@ def build_dfs(
         for neuron_name in good_neurons:
             good_layer, good_neuron = neuron_name[1:].split("N")
             good_layer, good_neuron = int(good_layer), int(good_neuron)
-            activations = get_mean_activation(model, german_data, good_layer, good_neuron)
+            activations = get_mean_activation(model, non_german_data, good_layer, good_neuron)
             def tmp_hook(value, hook):
                 value[:, :, good_neuron] = activations
                 return value
             tmp_hooks = [(f'blocks.{good_layer}.mlp.hook_post', tmp_hook)]
-            original_loss = eval_loss(model, non_german_data)
+            original_loss = eval_loss(model, german_data, mean=True)
             with model.hooks(tmp_hooks):
-                ablated_loss = eval_loss(model, non_german_data)
+                ablated_loss = eval_loss(model, german_data, mean=True)
             good_neuron_ablation_data.append([neuron_name, checkpoint, original_loss, ablated_loss])
 
     context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])
@@ -238,7 +239,7 @@ def build_dfs(
 def get_good_mcc_neurons(probe_df: pd.DataFrame):
     neurons = probe_df[(probe_df["MCC"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "MCC"]].copy()
     neurons = neurons.sort_values(by="MCC", ascending=False)
-    good_neurons = neurons["NeuronLabel"].unique()[:50]
+    good_neurons = neurons["NeuronLabel"].unique()[:10]
 
     return good_neurons
 
