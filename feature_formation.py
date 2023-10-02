@@ -38,7 +38,7 @@ def set_seeds():
 def train_probe(
     positive_data: torch.Tensor, negative_data: torch.Tensor
 ) -> tuple[float, float]:
-    def get_probe(x: np.array, y: np.array, max_iter=2000) -> LogisticRegression:
+    def get_probe(x: np.array, y: np.array, max_iter=5000) -> LogisticRegression:
         lr_model = LogisticRegression(max_iter=max_iter)
         lr_model.fit(x, y)
         return lr_model
@@ -56,7 +56,7 @@ def train_probe(
     x_train, x_test, y_train, y_test = train_test_split(
         data, labels, test_size=0.2, random_state=SEED
     )
-    probe = get_probe(x_train, y_train, max_iter=2000)
+    probe = get_probe(x_train, y_train, max_iter=5000)
     f1, mcc = get_probe_score(probe, x_test, y_test)
     return f1, mcc
 
