@@ -41,19 +41,25 @@ def load_txt_data(path: str) -> list[str]:
         return f.read().split("\n")
 
 
+def load_json_data(path: str) -> list[str]:
+    with open(path, 'r') as f:
+        data = json.load(f)
+
+    min_len = min([len(example) for example in data])
+    max_len = max([len(example) for example in data])
+    print(
+        f"{path}: Loaded {len(data)} examples with {min_len} to {max_len} characters each."
+    )
+    return data
+
+
 def load_language_data(path: Path) -> dict:
     """
-    Returns: dictionary keyed by language code, containing 200 lines of each language included in the Europarl dataset.
-    Assumes a directory of Europarl data in .txt files, each prefixed with a language code followed by an underscore e.g. en_foo.txt
+    Returns: dictionary keyed by language code.
     """
     lang_data = {}
-    for file in os.listdir(path):
-        if file.endswith(".txt"):
-            lang = file.split("_")[0]
-            lang_data[lang] = load_txt_data(path.joinpath(file))
-
-    for lang in lang_data.keys():
-        print(lang, len(lang_data[lang]))
+    lang_data['en'] = load_json_data(path.joinpath("english_europarl.json"))
+    lang_data['de'] = load_json_data(path.joinpath("german_europarl.json"))
     return lang_data
 
 
