@@ -71,13 +71,14 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     percentiles = [0.25, 0.5, 0.75]
     
     grouped = probe_df_melt.groupby('Checkpoint')['F1 score'].describe(percentiles=percentiles).reset_index()
+    L3N669_df = probe_df[probe_df["NeuronLabel"] == "L3N669"]
     # Plot
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color='rgba(31,119,180,0.2)', showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(31,119,180,0.2)', line_color='rgba(31,119,180,0.2)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), showlegend=False))
-
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median F1 Score"))
+    fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669 F1 Score"))
     fig.update_layout(title="F1 score of top neurons over time", xaxis_title="Checkpoint", yaxis_title="F1 score")
 
     fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"), width=2000)
