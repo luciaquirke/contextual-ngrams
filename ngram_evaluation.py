@@ -161,7 +161,7 @@ def calculate_trigram_losses(model_name, checkpoints, interesting_trigrams, prob
     downstream_components = ("blocks.4.hook_attn_out", "blocks.5.hook_attn_out", "blocks.4.hook_mlp_out", "blocks.5.hook_mlp_out")
     data = []
 
-    for checkpoint in [0, 10, 20, 50]:#tqdm(checkpoints): TODO
+    for checkpoint in tqdm(checkpoints):
         model = get_model(model_name, checkpoint)
         mean_english_activation = probe_df[(probe_df["Checkpoint"]==checkpoint) & (probe_df["NeuronLabel"]=="L3N669")]["MeanNonGermanActivation"].item()
         deactivate_context_hook = get_deactivate_context_hook(mean_english_activation)
