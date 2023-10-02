@@ -51,20 +51,29 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     )
     fig.write_image(image_dir.joinpath("top_mcc_by_checkpoint.png"), width=2000)
 
-    accurate_neurons = probe_df[
+    accurate_mcc_neurons = probe_df[
         (probe_df["MCC"] > 0.85)
         & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
     ][["NeuronLabel", "MCC"]].copy()
-    accurate_neurons = accurate_neurons.sort_values(by="MCC", ascending=False)
+    accurate_mcc_neurons = accurate_mcc_neurons.sort_values(by="MCC", ascending=False)
     print(
-        len(accurate_neurons["NeuronLabel"].unique()),
+        len(accurate_mcc_neurons["NeuronLabel"].unique()),
         "neurons with an MCC > 0.85 for German text recognition at any point during training.",
     )
-
-    good_mcc_neurons = accurate_neurons["NeuronLabel"].unique()[:50]
+    good_mcc_neurons = accurate_mcc_neurons["NeuronLabel"].unique()[:50]
+    accurate_f1_neurons = probe_df[
+        (probe_df["F1"] > 0.85)
+        & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
+    ][["NeuronLabel", "F1"]].copy()
+    accurate_f1_neurons = accurate_f1_neurons.sort_values(by="F1", ascending=False)
+    print(
+        len(accurate_f1_neurons["NeuronLabel"].unique()),
+        "neurons with an F1 > 0.85 for German text recognition at any point during training.",
+    )
+    good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()[:50]
 
     # Melt the DataFrame
-    probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_mcc_neurons)].melt(id_vars=['Checkpoint'], var_name='NeuronLabel', value_vars="F1", value_name='F1 score')
+    probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_f1_neurons)].melt(id_vars=['Checkpoint'], var_name='NeuronLabel', value_vars="F1", value_name='F1 score')
     probe_df_melt['F1 score'] = pd.to_numeric(probe_df_melt['F1 score'], errors='coerce')
 
     # Calculate percentiles at each x-coordinate
@@ -79,7 +88,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(31,119,180,0.2)', line_color='rgba(31,119,180,0.2)', showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median F1 Score"))
     fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669 F1 Score"))
-    fig.update_layout(title="F1 score of top neurons over time", xaxis_title="Checkpoint", yaxis_title="F1 score")
+    fig.update_layout(title="F1 Scores of German Context Neurons", xaxis_title="Checkpoint", yaxis_title="F1 score")
 
     fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"), width=2000)
 
