@@ -27,19 +27,19 @@ def load_ablation_analysis():
     return ablation_df
 
 
-def produce_images(model_name: str, save_data_path: Path, save_image_path: Path):
-    with gzip.open(
-        save_data_path.joinpath("checkpoint_ablation_data.pkl.gz"), "rb", compresslevel=9
-    ) as f:
-        data = pickle.load(f)
-    df = data['ngram']
+def produce_images(save_data_path: Path, save_image_path: Path):
+    # with gzip.open(
+    #     save_data_path.joinpath("checkpoint_ablation_data.pkl.gz"), "rb", compresslevel=9
+    # ) as f:
+    #     data = pickle.load(f)
+    # df = data['ngram']
 
-    df = df.sort_values(by="Checkpoint")
-    fig = px.line(df, x="Checkpoint", y="OriginalLoss", color="Ngram", title="Loss increase on 20 random German trigrams from top 200 common trigrams", width=900)
-    fig.save_image(save_image_path.joinpath("ngrams_loss_increase.png"))
+    # df = df.sort_values(by="Checkpoint")
+    # fig = px.line(df, x="Checkpoint", y="OriginalLoss", color="Ngram", title="Loss increase on 20 random German trigrams from top 200 common trigrams", width=900)
+    # fig.write_image(save_image_path.joinpath("ngrams_loss_increase.png"))
 
     probe_df = load_probe_data(save_data_path)
-    good_neurons = get_good_mcc_neurons(probe_df)
+    # good_neurons = get_good_mcc_neurons(probe_df)
     ablation_df = load_ablation_analysis()
     ablation_df.sort_values(by=["Checkpoint", "Label"], inplace=True)
 

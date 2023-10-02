@@ -70,7 +70,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         len(accurate_f1_neurons["NeuronLabel"].unique()),
         "neurons with an F1 > 0.85 for German text recognition at any point during training.",
     )
-    good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()[:50]
+    good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()
 
     # Melt the DataFrame
     probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_f1_neurons)].melt(id_vars=['Checkpoint'], var_name='NeuronLabel', value_vars="F1", value_name='F1 score')
@@ -137,20 +137,20 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     )
     fig.write_image(image_dir.joinpath("mean_activations.png"), width=2000)
 
-    with gzip.open(
-        output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "rb"
-    ) as f:
-        layer_ablation_df = pickle.load(f)
+    # with gzip.open(
+    #     output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "rb"
+    # ) as f:
+    #     layer_ablation_df = pickle.load(f)
     
-    fig = px.line(
-        layer_ablation_df.groupby(["Checkpoint", "Layer"]).mean().reset_index(),
-        x="Checkpoint",
-        y="LossDifference",
-        color="Layer",
-        title="Loss difference for zero-ablating MLP layers on German data",
-        width=900,
-    )
-    fig.write_image(image_dir.joinpath("layer_ablation_losses.png"))
+    # fig = px.line(
+    #     layer_ablation_df.groupby(["Checkpoint", "Layer"]).mean().reset_index(),
+    #     x="Checkpoint",
+    #     y="LossDifference",
+    #     color="Layer",
+    #     title="Loss difference for zero-ablating MLP layers on German data",
+    #     width=2000,
+    # )
+    # fig.write_image(image_dir.joinpath("layer_ablation_losses.png"), width=2000)
 
 
 if __name__ == "__main__":

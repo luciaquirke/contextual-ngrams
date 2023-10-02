@@ -96,10 +96,13 @@ def get_layer_probe_performance(
 ) -> pd.DataFrame:
     """Probe performance for each neuron."""
 
-    german_activations = get_mlp_activations(german_data[:30], layer, model)[:10_000]
-    non_german_activations = get_mlp_activations(non_german_data[:30], layer, model)[
+    german_activations = get_mlp_activations(german_data[:32], layer, model)[:10_000]
+    non_german_activations = get_mlp_activations(non_german_data[:32], layer, model)[
         :10_000
     ]
+
+    assert len(german_activations) == 10_000
+    assert len(non_german_activations) == 10_000
 
     mean_german_activations = german_activations.mean(0).cpu().numpy()
     mean_non_german_activations = non_german_activations.mean(0).cpu().numpy()
@@ -190,8 +193,8 @@ def analyze_features(
     non_german_data = lang_data["en"]
 
     probe_dfs = []
-    layer_ablation_dfs = []
-    lang_loss_dfs = []
+    # layer_ablation_dfs = []
+    # lang_loss_dfs = []
     with tqdm(total=num_checkpoints * n_layers) as pbar:
         for checkpoint in range(num_checkpoints):
             model = get_model(model_name, checkpoint)            
@@ -201,14 +204,14 @@ def analyze_features(
                 )
                 probe_dfs.append(partial_probe_df)
 
-                partial_layer_ablation_df = get_layer_ablation_loss(
-                    model, german_data, checkpoint, layer
-                )
+                # partial_layer_ablation_df = get_layer_ablation_loss(
+                #     model, german_data, checkpoint, layer
+                # )
+                # layer_ablation_dfs.append(partial_layer_ablation_df)
 
-                layer_ablation_dfs.append(partial_layer_ablation_df)
                 pbar.update(1)
                 
-            lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
+            # lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
 
             # Save progress to allow for checkpointing the analysis
             with open(
@@ -217,8 +220,8 @@ def analyze_features(
                 pickle.dump(
                     {
                         "probe": probe_dfs,
-                        "layer_ablation": layer_ablation_dfs,
-                        "lang_loss": lang_loss_dfs,
+                        # "layer_ablation": layer_ablation_dfs,
+                        # "lang_loss": lang_loss_dfs,
                     },
                     f,
                 )
@@ -236,15 +239,15 @@ def analyze_features(
     ) as f:
         pickle.dump(data['probe'], f)
 
-    with gzip.open(
-        output_dir.joinpath("checkpoint_lang_loss_df.pkl.gz"), "wb", compresslevel=9
-    ) as f:
-        pickle.dump(data['lang_loss'], f)
+    # with gzip.open(
+    #     output_dir.joinpath("checkpoint_lang_loss_df.pkl.gz"), "wb", compresslevel=9
+    # ) as f:
+    #     pickle.dump(data['lang_loss'], f)
 
-    with gzip.open(
-        output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "wb", compresslevel=9
-    ) as f:
-        pickle.dump(data['layer_ablation'], f)
+    # with gzip.open(
+    #     output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "wb", compresslevel=9
+    # ) as f:
+    #     pickle.dump(data['layer_ablation'], f)
 
 
 if __name__ == "__main__":
