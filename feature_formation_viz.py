@@ -74,25 +74,13 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     # Plot
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color='rgba(0,100,80,0.2)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(0,100,80,0.2)', line_color='rgba(0,100,80,0.2)', name="25th-75th percentile"))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(0,100,80)', width=2), name="Median"))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color='rgba(31,119,180,0.2)', showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(31,119,180,0.2)', line_color='rgba(31,119,180,0.2)', name="25th-75th percentile"))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median"))
 
     fig.update_layout(title="F1 score of top neurons over time", xaxis_title="Checkpoint", yaxis_title="F1 score")
 
     fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"), width=2000)
-
-    def get_mean_non_german(df, neuron, layer, checkpoint):
-        label = f"C{checkpoint}L{layer}N{neuron}"
-        df = df[df["Label"] == label]["MeanNonGermanActivation"].item()
-        return df
-
-    def get_mean_german(df, neuron, layer, checkpoint):
-        label = f"C{checkpoint}L{layer}N{neuron}"
-        df = df[df["Label"] == label]["MeanGermanActivation"].item()
-        return df
-
-    get_mean_non_german(probe_df, 669, 3, 140)
 
     layer_vals = np.random.randint(0, model.cfg.n_layers, good_mcc_neurons.size)
     neuron_vals = np.random.randint(0, model.cfg.d_mlp, good_mcc_neurons.size)
