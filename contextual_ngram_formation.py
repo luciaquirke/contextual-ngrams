@@ -181,7 +181,7 @@ def build_dfs(
 
     # deactivate_neurons_fwd_hooks = get_deactivate_neurons_fwd_hooks(model, german_data, layer, neuron)
 
-    for checkpoint in tqdm(range(0, num_checkpoints, 10)):
+    for checkpoint in tqdm(range(num_checkpoints)):
         model = get_model(model_name, checkpoint)
 
         # ngram_loss_dfs.append(
