@@ -188,9 +188,6 @@ def analyze_features(
 
     german_data = lang_data["de"]
     non_german_data = lang_data["en"]
-    # non_german_data = np.concatenate([lang_data[lang] for lang in lang_data.keys() if lang != "de"])
-    # np.random.shuffle(non_german_data)
-    # non_german_data = non_german_data[:200].tolist()
 
     probe_dfs = []
     layer_ablation_dfs = []
@@ -226,8 +223,6 @@ def analyze_features(
                     f,
                 )
 
-                
-
     # Open the pickle file
     with open(output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb") as f:
         data = pickle.load(f)
@@ -237,9 +232,19 @@ def analyze_features(
 
     # Compress with gzip using high compression and save
     with gzip.open(
-        output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "wb", compresslevel=9
-    ) as f_out:
-        pickle.dump(data, f_out)
+        output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "wb", compresslevel=9
+    ) as f:
+        pickle.dump(data['probe'], f)
+
+    with gzip.open(
+        output_dir.joinpath("checkpoint_lang_loss_df.pkl.gz"), "wb", compresslevel=9
+    ) as f:
+        pickle.dump(data['lang_loss'], f)
+
+    with gzip.open(
+        output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "wb", compresslevel=9
+    ) as f:
+        pickle.dump(data['layer_ablation'], f)
 
 
 if __name__ == "__main__":

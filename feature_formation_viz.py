@@ -129,7 +129,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         title="Neurons with max F1 >= 0.85", 
         width=800
     )
-    fig.save_image(image_dir.joinpath("high_f1_neurons.png"))
+    fig.write_image(image_dir.joinpath("high_f1_neurons.png"))
 
     context_neuron_df = probe_df[probe_df["NeuronLabel"] == "L3N669"]
     fig = px.line(
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--model",
-        default="EleutherAI/pythia-70m",
+        default="pythia-70m",
         help="Name of model from TransformerLens",
     )
     parser.add_argument("--output_dir", default="output")
