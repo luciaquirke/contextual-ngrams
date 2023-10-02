@@ -49,7 +49,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         width=800,
         height=400,
     )
-    fig.write_image(image_dir.joinpath("top_mcc_by_checkpoint.png"))
+    fig.write_image(image_dir.joinpath("top_mcc_by_checkpoint.png"), width=2000)
 
     accurate_neurons = probe_df[
         (probe_df["MCC"] > 0.85)
@@ -80,7 +80,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
 
     fig.update_layout(title="F1 score of top neurons over time", xaxis_title="Checkpoint", yaxis_title="F1 score")
 
-    fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"))
+    fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"), width=2000)
 
     def get_mean_non_german(df, neuron, layer, checkpoint):
         label = f"C{checkpoint}L{layer}N{neuron}"
@@ -108,7 +108,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         color="NeuronLabel",
         title="Neurons with max MCC >= 0.85",
     )
-    fig.write_image(image_dir.joinpath("high_mcc_neurons.png"))
+    fig.write_image(image_dir.joinpath("high_mcc_neurons.png"), width=2000)
 
     accurate_f1_neurons = probe_df[
         (probe_df["F1"] > 0.85)
@@ -129,7 +129,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         title="Neurons with max F1 >= 0.85", 
         width=800
     )
-    fig.write_image(image_dir.joinpath("high_f1_neurons.png"))
+    fig.write_image(image_dir.joinpath("high_f1_neurons.png"), width=2000)
 
     context_neuron_df = probe_df[probe_df["NeuronLabel"] == "L3N669"]
     fig = px.line(
@@ -137,7 +137,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         x="Checkpoint",
         y=["MeanGermanActivation", "MeanNonGermanActivation"],
     )
-    fig.write_image(image_dir.joinpath("mean_activations.png"))
+    fig.write_image(image_dir.joinpath("mean_activations.png"), width=2000)
 
     with gzip.open(
         output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "rb"

@@ -40,10 +40,25 @@ def produce_images(model_name: str, save_data_path: Path, save_image_path: Path)
     probe_df = load_probe_data(save_data_path)
     good_neurons = get_good_mcc_neurons(probe_df)
     ablation_df = load_ablation_analysis()
-    print(ablation_df.head())
     ablation_df.sort_values(by=["Checkpoint", "Label"], inplace=True)
-    fig = px.line(ablation_df[ablation_df["Label"].isin(good_neurons)], x="Checkpoint", y="AblationIncrease", color="Label", title="Ablation Increase on German prompts", width=800)
-    fig.write_image(save_image_path.joinpath("top_ctx_neurons_ablation_increase_german_prompts.png"))
+
+    L3N669_df = ablation_df[ablation_df["Label"] == "L3N669"]
+    non_L3N669_df = ablation_df[(ablation_df["Label"] != "L3N669")]
+    non_L3N669_df['Label'] = 'Other neurons with MCC > 0.85'
+    
+    percentiles = [0.25, 0.5, 0.75]
+    grouped = non_L3N669_df.groupby('Checkpoint')['AblationIncrease'].describe(percentiles=percentiles).reset_index()
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(31, 119, 180, 0.2)', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='#1F77B4', width=2), name="Other Context Neurons (Median)"))
+    fig.add_trace(go.Line(x=L3N669_df['Checkpoint'], y=L3N669_df['AblationIncrease'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
+
+    fig.update_layout(title="Loss Increase on German Text when Ablating Context Neurons", xaxis_title="Checkpoint", yaxis_title="AblationIncrease")
+
+    fig.write_image(save_image_path.joinpath("ablation_increase_german_text.png"), width=2000)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -54,7 +69,6 @@ if __name__ == "__main__":
         default="pythia-70m",
         help="Name of model from TransformerLens",
     )
-    # parser.add_argument("--data_dir", default="data/europarl")
     parser.add_argument("--output_dir", default="output")
 
     args = parser.parse_args()
@@ -65,4 +79,4 @@ if __name__ == "__main__":
     os.makedirs(save_path, exist_ok=True)
     os.makedirs(save_image_path, exist_ok=True)
     
-    produce_images(args.model, Path(save_path), Path(save_image_path))
+    produce_images(Path(save_path), Path(save_image_path))
