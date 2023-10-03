@@ -73,15 +73,15 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
             dla = model.W_out[layer, neuron, :] @ model.W_U
             german_dla = dla[german_tokens].mean().item()
             english_dla = dla[english_tokens].mean().item()
-            dla_data.append([checkpoint, german_dla-english_dla, neuron_label])
-    dla_df = pd.DataFrame(dla_data, columns=["Checkpoint", "DLA diff", "Neuron"])
+            dla_data.append([checkpoint, german_dla, english_dla, german_dla-english_dla, neuron_label])
+    dla_df = pd.DataFrame(dla_data, columns=["Checkpoint", "English DLA", "German DLA", "DLA diff", "Neuron"])
 
-    with open('dla_df.pkl', 'wb') as f:
+    with open('dla_df_all.pkl', 'wb') as f:
         pickle.dump(dla_df, f)
 
 
 def viz(model_name: str, save_path: Path, image_path: Path, data_path: Path):
-    with open('dla_df.pkl', 'rb') as f:
+    with open('dla_df_all.pkl', 'rb') as f:
         dla_df_all_neurons = pickle.load(f)
 
     dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
@@ -93,6 +93,16 @@ def viz(model_name: str, save_path: Path, image_path: Path, data_path: Path):
     fig = px.line(dla_df, x="Checkpoint", y="DLA Difference", color="Neuron", title="Difference between average DLA of frequent German and English tokens")
     fig.update_layout(font=dict(size=24), width=2000)
     fig.write_image(image_path.joinpath("dla_diff.png"))
+
+
+    dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
+    dla_df["DLA Difference"] = dla_df["DLA diff"]
+
+    fig = go.Figure()
+    fig.add_trace(go.Line(x=dla_df['Checkpoint'], y=dla_df['English DLA'], mode='lines', name="German DLA"))
+    fig.add_trace(go.Line(x=dla_df['Checkpoint'], y=dla_df['German DLA'], mode='lines', name="English DLA"))
+    fig.update_layout(font=dict(size=24), width=2000, title="Average DLA of L3N669 on frequent German and English tokens", xaxis_title="Checkpoint", yaxis_title="DLA")
+    fig.write_image(image_path.joinpath("dla_german_english.png"))
 
 
 if __name__ == "__main__":
