@@ -109,7 +109,7 @@ def process_data(model_name: str, output_dir: Path, data_dir: Path):
 
     downstream_components = ("blocks.4.hook_attn_out", "blocks.5.hook_attn_out", "blocks.4.hook_mlp_out", "blocks.5.hook_mlp_out")
     data = []
-    for checkpoint in tqdm(checkpoints):
+    for checkpoint in tqdm(range(0, len(checkpoints), 5)):
         model = get_model(model_name, checkpoint)
         mean_english_activation = probe_df[(probe_df["Checkpoint"]==checkpoint) & (probe_df["NeuronLabel"]=="L3N669")]["MeanNonGermanActivation"].item()
         deactivate_context_hook = get_deactivate_context_hook(mean_english_activation)
