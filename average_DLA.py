@@ -90,9 +90,9 @@ def viz(model_name: str, save_path: Path, image_path: Path, data_path: Path):
     fig.add_trace(go.Line(x=dla_df['Checkpoint'], y=dla_df['DLA diff'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
 
     dla_df["DLA Difference"] = dla_df["DLA diff"]
-    fig = px.line(dla_df, x="Checkpoint", y="DLA Difference", color="Neuron", title="Average DLA difference for common German over common English tokens")
+    fig = px.line(dla_df, x="Checkpoint", y="DLA Difference", color="Neuron", title="Difference between average DLA of frequent German and English tokens")
     fig.update_layout(font=dict(size=24), width=2000)
-    fig.write_image(image_path.joinpath("dla.png"))
+    fig.write_image(image_path.joinpath("dla_diff.png"))
 
 
 if __name__ == "__main__":
