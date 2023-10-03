@@ -49,7 +49,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
 
     melt_df = context_effect_df.melt(id_vars=["Checkpoint"], var_name="Type", value_name="LossIncrease", value_vars=["Direct Effect", "Indirect Effect"])
     fig = px.line(melt_df, x="Checkpoint", y="LossIncrease", color="Type", title="Direct and indirect ablation effect of L3N669 on German text")
-    fig.update_layout(xaxis_title="Checkpoint", yaxis_title="Loss Increase", font=dict(size=24))
+    fig.update_layout(xaxis_title="Checkpoint", yaxis_title="Loss increase", font=dict(size=24))
 
     fig.write_image(image_dir.joinpath("direct_indirect_effect.png"), width=2000)
 

@@ -88,7 +88,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor='rgba(31,119,180,0.2)', line_color='rgba(31,119,180,0.2)', showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median of Other<br>Context Neurons"))
     fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
-    fig.update_layout(title="F1 Scores of German Context Neurons", xaxis_title="Checkpoint", yaxis_title="F1 score", font=dict(size=24))
+    fig.update_layout(title="F1 scores of German context neurons", xaxis_title="Checkpoint", yaxis_title="F1 score", font=dict(size=24))
 
     fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"), width=2000)
 
