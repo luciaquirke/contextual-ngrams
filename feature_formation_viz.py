@@ -31,8 +31,8 @@ def set_seeds():
 def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     set_seeds()
     model = get_model(model_name, 0)
-    with gzip.open(
-            output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "rb"
+    with open(
+            output_dir.joinpath("checkpoint_probe_df.pkl"), "rb"
         ) as f:
         probe_df = pickle.load(f)
 

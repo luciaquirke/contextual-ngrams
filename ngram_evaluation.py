@@ -5,6 +5,7 @@ import os
 import gzip
 from pathlib import Path
 import json
+import re
 
 import pandas as pd
 import numpy as np
@@ -37,8 +38,8 @@ def set_seeds():
 def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
     set_seeds()
     model = get_model(model_name, 0)
-    with gzip.open(
-            output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "rb"
+    with open(
+            output_dir.joinpath("checkpoint_probe_df.pkl"), "rb"
         ) as f:
         probe_df = pickle.load(f)
     print("Loaded probe_df")

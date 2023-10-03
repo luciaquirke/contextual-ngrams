@@ -17,7 +17,7 @@ def get_good_mcc_neurons(probe_df: pd.DataFrame):
 
 
 def load_probe_data(save_path):
-    with gzip.open(save_path.joinpath("checkpoint_probe_df.pkl.gz"), "rb") as f:
+    with open(save_path.joinpath("checkpoint_probe_df.pkl"), "rb") as f:
         return pickle.load(f)
 
 
