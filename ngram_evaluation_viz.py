@@ -85,7 +85,8 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         #yaxis=dict(type='log'),
         #yaxis2=dict(type='linear')
         yaxis=dict(range=[1, 13]),
-        yaxis2=dict(range=[-0.15, 1.15])
+        yaxis2=dict(range=[-0.15, 1.15]),
+        font=dict(size=24)
     )
 
     fig.write_image(image_dir.joinpath("figure_1.png"), width=2000)
