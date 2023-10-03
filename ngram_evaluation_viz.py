@@ -123,6 +123,46 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.write_image(image_dir.joinpath("trigram_losses.png"), width=2000)
 
 
+    # Calculate percentiles at each x-coordinate
+    percentiles = [0.25, 0.5, 0.75]
+    grouped = context_effect_df.groupby('Checkpoint')['Original Loss'].describe(percentiles=percentiles).reset_index()
+    # Plot
+    fig = make_subplots()
+    shade_color_1 = 'rgba(255,127,14,0.2)'
+    line_color_1 = 'rgb(255,127,14)'
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_1, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_1, line_color=shade_color_1, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_1, width=2), name="Trigram Loss"))
+    fig.update_layout(title="German trigram (N=235) losses over checkpoints", xaxis_title="Checkpoint", yaxis_title="Loss")
+
+    grouped = context_effect_df.groupby('Checkpoint')["Indirect Effect Loss"].describe(percentiles=percentiles).reset_index()
+    # Plot
+    shade_color_2 = 'rgba(0,128,255,0.2)'
+    line_color_2 = 'rgb(0,128,255)'
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Indirect Ablation Loss"))
+    fig.update_layout(xaxis_title="Checkpoint", yaxis_title="Loss")
+
+    grouped = context_effect_df.groupby('Checkpoint')['Direct Effect Loss'].describe(percentiles=percentiles).reset_index()
+    # Plot
+    shade_color_2 = 'rgba(214,39,40,0.2)'
+    line_color_2 = 'rgb(214,39,40)'
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Direct Ablation Loss"))
+    fig.update_layout(xaxis_title="Checkpoint", yaxis_title="Loss")
+
+    fig.update_layout(title_text="Indirect and direct contextual trigram losses from ablating L3N699")
+    fig.update_layout(
+        #yaxis=dict(type='log'),
+        #yaxis2=dict(type='linear')
+        yaxis=dict(range=[1, 13]),
+        font=dict(size=24)
+    )
+
+    fig.write_image(image_dir.joinpath("trigram_losses_direct_indirect.png"), width=2000)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

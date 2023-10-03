@@ -51,8 +51,8 @@ def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
         checkpoints.append(checkpoint)
 
     lang_data = load_language_data(data_dir)
-    german_data = lang_data["de"]
-    english_data = lang_data["en"]
+    german_data = lang_data["de"][:200]
+    english_data = lang_data["en"][:200]
     return checkpoints, german_data, english_data
 
 def eval_loss(model, data):
