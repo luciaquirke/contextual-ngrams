@@ -22,7 +22,7 @@ def load_probe_data(save_path):
 
 
 def load_ablation_analysis():
-    ablation_df = pd.read_csv("data/checkpoint_ablation_data.csv")
+    ablation_df = pd.read_csv("data/checkpoint_ablation_data_all_neurons.csv")
     ablation_df["AblationIncrease"] = ablation_df["AblatedLoss"] - ablation_df["OriginalLoss"]
     return ablation_df
 
@@ -49,13 +49,13 @@ def produce_images(save_data_path: Path, save_image_path: Path):
     non_L3N669_df['Loss Increase'] = non_L3N669_df['AblationIncrease']
     non_L3N669_df['Label'] = 'Other neurons with MCC > 0.85'
 
-    percentiles = [0.25, 0.5, 0.75]
+    percentiles = [0, 0.5, 1]
     grouped = non_L3N669_df.groupby('Checkpoint')['Loss Increase'].describe(percentiles=percentiles).reset_index()
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(31, 119, 180, 0.2)', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['0%'], fill=None, mode='lines', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['100%'], fill='tonexty', fillcolor='rgba(31, 119, 180, 0.2)', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='#1F77B4', width=2), name="Median of Other<br>Context Neurons"))
     fig.add_trace(go.Line(x=L3N669_df['Checkpoint'], y=L3N669_df['Loss Increase'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
 
