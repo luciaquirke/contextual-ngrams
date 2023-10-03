@@ -56,10 +56,10 @@ def produce_images(save_data_path: Path, save_image_path: Path):
 
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor='rgba(31, 119, 180, 0.2)', line_color='rgba(31, 119, 180, 0.4)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='#1F77B4', width=2), name="Other Context<br>Neurons (Median)"))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='#1F77B4', width=2), name="Median of Other<br>Context Neurons"))
     fig.add_trace(go.Line(x=L3N669_df['Checkpoint'], y=L3N669_df['Loss Increase'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
 
-    fig.update_layout(title="Loss Increase on German Text when Ablating Context Neurons", xaxis_title="Checkpoint", yaxis_title="Loss Increase")
+    fig.update_layout(title="Loss Increase on German Text when Ablating Context Neurons", xaxis_title="Checkpoint", yaxis_title="Loss Increase", font=dict(size=24))
 
     fig.write_image(save_image_path.joinpath("ablation_increase_german_text.png"), width=2000)
 
