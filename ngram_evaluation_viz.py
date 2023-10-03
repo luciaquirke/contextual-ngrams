@@ -92,14 +92,14 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.write_image(image_dir.joinpath("figure_1.png"), width=2000)
 
     # Calculate percentiles at each x-coordinate
-    percentiles = [0.25, 0.5, 0.75]
+    percentiles = [0.05, 0.5, 0.95]
     grouped = context_effect_df.groupby('Checkpoint')['Original Loss'].describe(percentiles=percentiles).reset_index()
     # Plot
     fig = make_subplots()
     shade_color_1 = 'rgba(255,0,0,0.2)'
     line_color_1 = 'rgb(255,0,0)'
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_1, showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_1, line_color=shade_color_1, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color=shade_color_1, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor=shade_color_1, line_color=shade_color_1, name="25th-75th percentile", showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_1, width=2), name="Trigram Loss"))
     fig.update_layout(title="German trigram (N=235) losses over checkpoints", xaxis_title="Checkpoint", yaxis_title="Loss")
 
@@ -107,8 +107,8 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     # Plot
     shade_color_2 = 'rgba(0,128,255,0.2)'
     line_color_2 = 'rgb(0,128,255)'
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablated Trigram Loss"))
     fig.update_layout(xaxis_title="Checkpoint", yaxis_title="Loss")
 
