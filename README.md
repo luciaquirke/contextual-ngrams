@@ -4,10 +4,10 @@ A minimal replication of finding and evaluating contextual n-grams in Pythia ser
 
 ## Instructions
 
-`pip install requirements.txt`
+`pip install nltk kaleido tqdm einops seaborn plotly-express fancy-einsum scikit-learn torchmetrics ipykernel ipywidgets nbformat git+https://github.com/neelnanda-io/TransformerLens git+https://github.com/callummcdougall/CircuitsVis.git#subdirectory=python git+https://github.com/neelnanda-io/neelutils.git git+https://github.com/neelnanda-io/neel-plotly.git`
 
 `python feature_formation.py --model pythia-70m`
 
-`python contextual_ngram_formation.py --model pythia-70m --neuron 3,669`
+`python contextual_ngram_formation.py --model pythia-70m`
 
 These scripts are extremely slow as they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
