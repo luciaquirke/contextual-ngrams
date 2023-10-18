@@ -89,7 +89,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         font=dict(size=24)
     )
 
-    fig.write_image(image_dir.joinpath("figure_1.png"), width=1200)
+    fig.write_image(image_dir.joinpath("figure_1.png"), width=1400)
 
     # Calculate percentiles at each x-coordinate
     percentiles = [0.05, 0.5, 0.95]
