@@ -18,7 +18,7 @@ Generate data from the command line:
 
 Some scripts are extremely slow because they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
 
-Generate visualizations by running the corresponding file, suffixed with `_viz`:
+Replicate figures by running the corresponding file, suffixed with `_viz`:
 
 `python feature_formation_viz.py --model pythia-70m`
 
