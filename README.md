@@ -16,7 +16,7 @@ Generate data from the command line:
 
 `python contextual_ngram_formation.py --model pythia-70m`
 
-The scripts are extremely slow as they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
+Some scripts are extremely slow because they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
 
 Generate visualizations by running the corresponding file, suffixed with `_viz`:
 
