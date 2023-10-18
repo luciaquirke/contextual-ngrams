@@ -70,7 +70,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     line_color_2 = 'rgb(0,128,255)'
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False), secondary_y=True)
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False), secondary_y=True)
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation Loss increase"), secondary_y=True)
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation loss increase"), secondary_y=True)
     fig.update_layout(title="German trigram (N=235) loss increases from ablating L3N669", xaxis_title="Checkpoint", yaxis_title="Loss increase")
 
     line_color_3 = 'rgb(255,128,0)'
@@ -80,7 +80,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.update_yaxes(title_text="Loss", secondary_y=False)
     fig.update_yaxes(title_text="", secondary_y=True)
 
-    fig.update_layout(title_text="Trigram evaluation, loss increase from ablating L3N699, and L3N669 F1 score over training checkpoints")
+    fig.update_layout(title_text="Trigram evaluation, ablation loss, and German neuron F1 score over training")
     fig.update_layout(
         #yaxis=dict(type='log'),
         #yaxis2=dict(type='linear')
