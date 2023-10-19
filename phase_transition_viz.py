@@ -92,7 +92,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.update_layout(
         #yaxis=dict(type='log'),
         #yaxis2=dict(type='linear')
-        yaxis=dict(range=[1, 13]),
+        yaxis=dict(range=[0, 12]),
         font=dict(size=24)
     )
 
