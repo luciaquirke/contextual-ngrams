@@ -21,7 +21,11 @@ from tqdm import tqdm
 
 from neel_plotly import *
 
-from utils import get_model, load_language_data, get_common_tokens, generate_random_prompts, get_weird_tokens
+from utils import get_model, load_language_data, get_context_effect, get_common_tokens, generate_random_prompts, get_weird_tokens
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+torch.autograd.set_grad_enabled(False)
+torch.set_grad_enabled(False)
 
 
 SEED = 42
@@ -84,40 +88,6 @@ def get_all_non_letter_tokens(model: HookedTransformer):
             letter_tokens.append(token)
     return torch.LongTensor(letter_tokens)
 
-def get_context_effect(prompt: str | list[str], model: HookedTransformer, context_ablation_hooks: list, context_activation_hooks: list,
-                      downstream_components=[], pos=None):  
-    
-    return_type = "loss"
-    original_metric = model(prompt, return_type=return_type, loss_per_token=True)
-    # 1. Activated loss: activate context
-    with model.hooks(fwd_hooks=context_activation_hooks):
-        activated_metric, activated_cache = model.run_with_cache(prompt, return_type=return_type, loss_per_token=True)
-
-    # 2. Total effect: deactivate context
-    with model.hooks(fwd_hooks=context_ablation_hooks):
-        ablated_metric, ablated_cache = model.run_with_cache(prompt, return_type=return_type, loss_per_token=True)
-
-    # 3. Direct effect: activate context, deactivate later components
-    def deactivate_components_hook(value, hook: HookPoint):
-        value = ablated_cache[hook.name]
-        return value
-    deactivate_components_hooks = [(freeze_act_name, deactivate_components_hook) for freeze_act_name in downstream_components]
-    with model.hooks(fwd_hooks=deactivate_components_hooks+context_activation_hooks):
-        direct_effect_metric = model(prompt, return_type=return_type, loss_per_token=True)
-
-    # 4. Indirect effect: deactivate context, activate later components
-    def activate_components_hook(value, hook: HookPoint):
-        value = activated_cache[hook.name]
-        return value         
-    activate_components_hooks = [(freeze_act_name, activate_components_hook) for freeze_act_name in downstream_components]
-    with model.hooks(fwd_hooks=activate_components_hooks+context_ablation_hooks):
-        indirect_effect_metric = model(prompt, return_type=return_type, loss_per_token=True)
-
-    if pos is None:
-        return original_metric, activated_metric, ablated_metric, direct_effect_metric, indirect_effect_metric
-    else:
-        return original_metric[:, pos], activated_metric[:, pos], ablated_metric[:, pos], direct_effect_metric[:, pos], indirect_effect_metric[:, pos]
-
 def get_trigrams(model_name, probe_df, checkpoints, german_data):
     downstream_components = ("blocks.4.hook_attn_out", "blocks.5.hook_attn_out", "blocks.4.hook_mlp_out", "blocks.5.hook_mlp_out")
     checkpoint = len(checkpoints)-1
@@ -125,37 +95,68 @@ def get_trigrams(model_name, probe_df, checkpoints, german_data):
     model = get_model(model_name, checkpoint)
     mean_english_activation = probe_df[(probe_df["Checkpoint"]==checkpoint) & (probe_df["NeuronLabel"]=="L3N669")]["MeanNonGermanActivation"].item()
     deactivate_context_hook = get_deactivate_context_hook(mean_english_activation)
+    
+    def get_low_indirect_effect_loss_increase_interest_measure(
+        original_loss,
+        activated_loss,
+        ablated_loss,
+        indirect_effect_removal_loss,
+        direct_effect_removal_loss,
+    ):
+        # High ablation increase - prompts where the context neuron matters
+        overall_loss_increase = (ablated_loss - original_loss).flatten()
+        # High loss increase when removing the indirect effect
+        indirect_loss_recovery = (
+            indirect_effect_removal_loss - original_loss
+        ).flatten()
 
-    def get_interest_measure(original_metric, activated_metric, ablated_metric, direct_effect_metric, indirect_effect_metric):
-        overall_loss_increase = (ablated_metric - original_metric).flatten()
-        indirect_loss_increase = (indirect_effect_metric - original_metric).flatten()
-        indirect_over_direct_loss_increase = (indirect_effect_metric - direct_effect_metric).flatten()
-        position_wise_min = torch.min(torch.min(indirect_loss_increase, overall_loss_increase), indirect_over_direct_loss_increase)
-        position_wise_min[original_metric.flatten() > 5] = 0
+        position_wise_min = torch.min(indirect_loss_recovery, overall_loss_increase)
+        position_wise_min[original_loss.flatten() > 2.5] = 0
         max_interest = torch.max(position_wise_min).item()
         return position_wise_min, max_interest
 
     non_letter_tokens = get_all_non_letter_tokens(model)
     interesting_trigrams = []
     for prompt in tqdm(german_data):
-        original_metric, activated_metric, ablated_metric, direct_effect_metric, indirect_effect_metric = get_context_effect(prompt, model, 
-                            context_ablation_hooks=deactivate_context_hook, context_activation_hooks=[], downstream_components=downstream_components)
+        (
+            original_loss,
+            activated_loss,
+            ablated_loss,
+            indirect_effect_removal_loss,
+            direct_effect_removal_loss,
+        ) = get_context_effect(
+            prompt,
+            model,
+            context_ablation_hooks=deactivate_context_hook,
+            context_activation_hooks=[],
+            downstream_components=downstream_components,
+        )
         str_prompt = model.to_str_tokens(prompt)[1:]
-        interest_measure, max_interest = get_interest_measure(original_metric, activated_metric, ablated_metric, direct_effect_metric, indirect_effect_metric)
-        
-        measure_names = ["Original", "Ablated", "Direct Effect", "Indirect Effect"]
-        interesting_positions = torch.argwhere(interest_measure>2)
+        (
+            interest_measure,
+            max_interest,
+        ) = get_low_indirect_effect_loss_increase_interest_measure(
+            original_loss,
+            activated_loss,
+            ablated_loss,
+            indirect_effect_removal_loss,
+            direct_effect_removal_loss,
+        )
+
+        interesting_positions = torch.argwhere(interest_measure > 4)
         if len(interesting_positions) > 0:
             for position in interesting_positions:
-                start_index = max(position-5, 0)
-                end_index = min(position+5, len(str_prompt))
-                measures = [original_metric.flatten().tolist()[start_index:end_index], ablated_metric.flatten().tolist()[start_index:end_index], direct_effect_metric.flatten().tolist()[start_index:end_index], indirect_effect_metric.flatten().tolist()[start_index:end_index]]
-                if position>2:
-                    trigram = "".join(str_prompt[position-2:position+1])
+                if position > 2:
+                    trigram = "".join(str_prompt[position - 2 : position + 1])
                     trigram_tokens = model.to_tokens(trigram)
-                    if not torch.any(torch.isin(trigram_tokens.long().cpu(), non_letter_tokens)):
+                    if not torch.any(
+                        torch.isin(trigram_tokens.long().cpu(), non_letter_tokens)
+                    ):
                         interesting_trigrams.append(trigram)
-    return list(set(interesting_trigrams))
+
+    interesting_trigrams = sorted(list(set(interesting_trigrams)))
+    del model
+    return interesting_trigrams
 
 def calculate_trigram_losses(model_name, checkpoints, interesting_trigrams, probe_df, common_tokens):
 
@@ -185,7 +186,7 @@ def process_data(model_name: str, output_dir: Path, data_dir: Path):
     print("Loaded data")
     interesting_trigrams = get_trigrams(model_name, probe_df, checkpoints, german_data)
     print(f"Got trigrams (N={len(interesting_trigrams)})")
-    with open(output_dir.joinpath("high_indirect_loss_trigrams.json"), 'w') as f:
+    with open(output_dir.joinpath("low_indirect_loss_trigrams.json"), 'w') as f:
             json.dump(interesting_trigrams, f)
 
     context_effect_df = calculate_trigram_losses(model_name, checkpoints, interesting_trigrams, probe_df, common_tokens)

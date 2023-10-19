@@ -23,6 +23,10 @@ from neel_plotly import *
 
 from utils import get_model, load_language_data, get_common_tokens, generate_random_prompts, get_weird_tokens
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
+torch.autograd.set_grad_enabled(False)
+torch.set_grad_enabled(False)
+
 
 SEED = 42
 NEURON = 669
