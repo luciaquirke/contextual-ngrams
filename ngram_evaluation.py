@@ -143,7 +143,7 @@ def get_trigrams(model_name, probe_df, checkpoints, german_data):
             direct_effect_removal_loss,
         )
 
-        interesting_positions = torch.argwhere(interest_measure > 4)
+        interesting_positions = torch.argwhere(interest_measure > 3)
         if len(interesting_positions) > 0:
             for position in interesting_positions:
                 if position > 2:
@@ -181,11 +181,44 @@ def calculate_trigram_losses(model_name, checkpoints, interesting_trigrams, prob
     context_effect_df = pd.DataFrame(data, columns=["Checkpoint", "Trigram", "Original Loss", "Ablated Loss", "Direct Effect Loss", "Indirect Effect Loss"])
     return context_effect_df
 
+def filter_trigram_candidates(interesting_trigrams: list[str], model_name: str, checkpoints: list[int], german_data: list[str], probe_df, common_tokens):
+    checkpoint = len(checkpoints)-1
+    model = get_model(model_name, checkpoint)
+    downstream_components = ("blocks.4.hook_attn_out", "blocks.5.hook_attn_out", "blocks.4.hook_mlp_out", "blocks.5.hook_mlp_out")
+
+    mean_english_activation = probe_df[(probe_df["Checkpoint"]==checkpoint) & (probe_df["NeuronLabel"]=="L3N669")]["MeanNonGermanActivation"].item()
+    deactivate_context_hook = get_deactivate_context_hook(mean_english_activation)
+
+    original_losses = []
+    ablated_losses = []
+    direct_losses = []
+    indirect_losses = []
+
+    for trigram in tqdm(interesting_trigrams):
+        prompts = generate_random_prompts(trigram, model, common_tokens, 100, 20)
+        original_metric, activated_metric, ablated_metric, direct_effect_metric, indirect_effect_metric = get_context_effect(prompts, model, 
+                                context_ablation_hooks=deactivate_context_hook, context_activation_hooks=[], downstream_components=downstream_components, pos=-1)
+        original_losses.append(original_metric.mean(0).item())
+        ablated_losses.append(ablated_metric.mean(0).item())
+        direct_losses.append(direct_effect_metric.mean(0).item())
+        indirect_losses.append(indirect_effect_metric.mean(0).item())
+
+    loss_df = pd.DataFrame({"Trigram": interesting_trigrams, "Original": original_losses, "Ablated": ablated_losses, "Direct Effect": direct_losses, "Indirect Effect": indirect_losses})
+    loss_df["Ablation increase"] = loss_df["Ablated"] - loss_df["Original"]
+    loss_df_filtered = loss_df[(loss_df["Original"] < 3) & (loss_df["Ablation increase"] > 2)]
+    trigrams = loss_df_filtered["Trigram"].tolist()
+    return trigrams
+
 def process_data(model_name: str, output_dir: Path, data_dir: Path):
     probe_df, checkpoints, good_f1_neurons, german_data, common_tokens = load_data(model_name, output_dir, data_dir)
     print("Loaded data")
+    
     interesting_trigrams = get_trigrams(model_name, probe_df, checkpoints, german_data)
+    print(f"Got trigram candidates (N={len(interesting_trigrams)})")
+
+    interesting_trigrams = filter_trigram_candidates(interesting_trigrams, model_name, checkpoints, german_data, probe_df, common_tokens)
     print(f"Got trigrams (N={len(interesting_trigrams)})")
+
     with open(output_dir.joinpath("low_indirect_loss_trigrams.json"), 'w') as f:
             json.dump(interesting_trigrams, f)
 
