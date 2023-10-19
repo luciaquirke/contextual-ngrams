@@ -61,7 +61,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     line_color_1 = 'rgb(255,0,0)'
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_1, showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_1, line_color=shade_color_1, name="25th-75th percentile", showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_1, width=2), name="Trigram Loss"))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_1, width=2), name="Trigram loss"))
     fig.update_layout(title="German trigram (N=235) losses over checkpoints", xaxis_title="Checkpoint", yaxis_title="Loss")
 
     grouped = context_effect_df.groupby('Checkpoint')['Ablation increase (fraction)'].describe(percentiles=percentiles).reset_index()
@@ -70,7 +70,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     line_color_2 = 'rgb(0,128,255)'
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False), secondary_y=True)
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False), secondary_y=True)
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation Loss increase"), secondary_y=True)
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation loss increase"), secondary_y=True)
     fig.update_layout(title="German trigram (N=235) loss increases from ablating L3N669", xaxis_title="Checkpoint", yaxis_title="Loss increase")
 
     line_color_3 = 'rgb(255,128,0)'
@@ -80,7 +80,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.update_yaxes(title_text="Loss", secondary_y=False)
     fig.update_yaxes(title_text="", secondary_y=True)
 
-    fig.update_layout(title_text="Trigram evaluation, loss increase from ablating L3N699, and L3N669 F1 score over training checkpoints")
+    fig.update_layout(title_text="Trigram loss, ablation loss, and L3N669 F1 score over training")
     fig.update_layout(
         #yaxis=dict(type='log'),
         #yaxis2=dict(type='linear')
@@ -89,7 +89,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         font=dict(size=24)
     )
 
-    fig.write_image(image_dir.joinpath("figure_1.png"), width=2000)
+    fig.write_image(image_dir.joinpath("figure_1.png"), width=1200)
 
     # Calculate percentiles at each x-coordinate
     percentiles = [0.05, 0.5, 0.95]
