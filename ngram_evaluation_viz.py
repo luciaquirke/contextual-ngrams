@@ -80,7 +80,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     fig.update_yaxes(title_text="Loss", secondary_y=False)
     fig.update_yaxes(title_text="", secondary_y=True)
 
-    fig.update_layout(title_text="Trigram loss, ablation loss, and L3N669 F1 score over training")
+    fig.update_layout(title_text="Trigram evaluation, ablation loss, and German neuron F1 score over training")
     fig.update_layout(
         #yaxis=dict(type='log'),
         #yaxis2=dict(type='linear')
@@ -89,7 +89,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         font=dict(size=24)
     )
 
-    fig.write_image(image_dir.joinpath("figure_1.png"), width=1200)
+    fig.write_image(image_dir.joinpath("figure_1.png"), width=1400)
 
     # Calculate percentiles at each x-coordinate
     percentiles = [0.05, 0.5, 0.95]
