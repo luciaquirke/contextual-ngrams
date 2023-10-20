@@ -12,11 +12,7 @@ Use the included Dockerfile, or alternatively install PyTorch then run:
 
 Generate data by running each script from the command line:
 
-`python feature_formation.py --model pythia-70m`
-
-`python contextual_ngram_formation.py --model pythia-70m`
-
-`. . .`
+`python generate_foo.py --model pythia-70m`
 
 Some scripts are extremely slow because they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
 
