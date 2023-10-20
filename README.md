@@ -10,7 +10,7 @@ Use the included Dockerfile, or alternatively install PyTorch then run:
 
 ### Instructions
 
-Generate data by running each file from the command line:
+Generate data by running each script from the command line:
 
 `python feature_formation.py --model pythia-70m`
 
