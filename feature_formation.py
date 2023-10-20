@@ -38,12 +38,12 @@ def set_seeds():
 def train_probe(
     positive_data: torch.Tensor, negative_data: torch.Tensor
 ) -> tuple[float, float]:
-    def get_probe(x: np.array, y: np.array, max_iter=5000) -> LogisticRegression:
+    def get_probe(x: np.ndarray, y: np.ndarray, max_iter=5000) -> LogisticRegression:
         lr_model = LogisticRegression(max_iter=max_iter)
         lr_model.fit(x, y)
         return lr_model
 
-    def get_probe_score(lr_model: LogisticRegression, x: np.array, y: np.array) -> tuple[float, float]:
+    def get_probe_score(lr_model: LogisticRegression, x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
         preds = lr_model.predict(x)
         f1 = f1_score(y, preds)
         mcc = matthews_corrcoef(y, preds)
@@ -78,8 +78,7 @@ def get_mlp_activations(
             act = model.hook_dict[act_label].ctx["activation"][:, 10:400, :]
         act = einops.rearrange(act, "batch pos n_neurons -> (batch pos) n_neurons")
         acts.append(act)
-    acts = torch.concat(acts, dim=0)
-    return acts
+    return torch.concat(acts, dim=0)
 
 
 def zero_ablate_hook(value, hook):

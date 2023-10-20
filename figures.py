@@ -13,6 +13,7 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from neel_plotly import *
 from utils import get_model

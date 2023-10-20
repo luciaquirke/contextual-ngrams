@@ -28,7 +28,7 @@ from utils import (
     get_common_tokens,
     generate_random_prompts,
     get_weird_tokens,
-    get_device
+    get_device,
 )
 
 device = get_device()
@@ -47,14 +47,16 @@ def set_seeds():
     random.seed(SEED)
 
 
-def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
+def load_data(
+    model_name: str, output_dir: Path, data_dir: Path
+) -> tuple[pd.DataFrame, list[int], np.ndarray, list[str], tuple[torch.Tensor, torch.Tensor]]:
     set_seeds()
     model = get_model(model_name, 0)
     with open(output_dir.joinpath("checkpoint_probe_df.pkl"), "rb") as f:
         probe_df = pickle.load(f)
     print("Loaded probe_df")
-    checkpoints = []
-    top_probe = []
+    checkpoints: list[int] = []
+    top_probe: list[int] = []
     for checkpoint in probe_df["Checkpoint"].unique():
         checkpoint_df = probe_df[probe_df["Checkpoint"] == checkpoint]
         top_probe.append(checkpoint_df["MCC"].max())
@@ -71,7 +73,7 @@ def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
         len(accurate_f1_neurons["NeuronLabel"].unique()),
         "neurons with an F1 > 0.85 for German text recognition at any point during training.",
     )
-    good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()
+    good_f1_neurons: np.ndarray = accurate_f1_neurons["NeuronLabel"].unique()
 
     lang_data = load_language_data(data_dir)
     german_data = lang_data["de"]

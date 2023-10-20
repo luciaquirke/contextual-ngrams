@@ -63,10 +63,10 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
         list(set(all_ignore.tolist()).union(set(non_letter_tokens.tolist())))
     )
     german_counts, german_tokens = get_common_tokens(
-        lang_data["de"], model, ignore_and_non_letter, k=200, return_counts=True
+        lang_data["de"], model, ignore_and_non_letter, k=200
     )
     english_counts, english_tokens = get_common_tokens(
-        lang_data["en"], model, ignore_and_non_letter, k=200, return_counts=True
+        lang_data["en"], model, ignore_and_non_letter, k=200
     )
 
     probe_df = load_probe_data(save_path)

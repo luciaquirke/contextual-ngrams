@@ -5,6 +5,7 @@ import os
 import gzip
 from pathlib import Path
 from collections import Counter
+from typing import Callable, Any
 
 import pandas as pd
 import numpy as np
@@ -75,7 +76,7 @@ def get_ngram_losses(
     checkpoint: int,
     ngrams: list[str],
     common_tokens: list[str],
-    fwd_hooks: list[tuple[str, callable]],
+    fwd_hooks: list[tuple[str, Callable]],
 ) -> pd.DataFrame:
     data = []
     for ngram in ngrams:
@@ -94,7 +95,7 @@ def get_ngram_losses(
 
 def get_common_ngrams(
     model: HookedTransformer, prompts: list[str], n: int, top_k=100
-) -> list[str]:
+) -> list[tuple[Any, int]]:
     """
     n: n-gram length
     top_k: number of n-grams to return

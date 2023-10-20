@@ -46,7 +46,7 @@ def set_seeds():
     random.seed(SEED)
 
 
-def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
+def load_data(model_name: str, output_dir: Path, data_dir: Path) -> tuple[pd.DataFrame, list, list]:
     set_seeds()
     model = get_model(model_name, 0)
     with open(output_dir.joinpath("checkpoint_probe_df.pkl"), "rb") as f:

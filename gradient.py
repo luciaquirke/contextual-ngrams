@@ -277,4 +277,4 @@ if __name__ == "__main__":
     checkpoints_df = analyze_gradients(
         args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir)
     )
-    save_figures(args.model, checkpoint_df, save_path)
+    save_figures(args.model, checkpoints_df, save_path)

@@ -47,7 +47,7 @@ def load_txt_data(path: str) -> list[str]:
         return f.read().split("\n")
 
 
-def load_json_data(path: str) -> list[str]:
+def load_json_data(path: str | Path) -> list[str]:
     with open(path, "r") as f:
         data = json.load(f)
 
@@ -59,7 +59,7 @@ def load_json_data(path: str) -> list[str]:
     return data
 
 
-def load_language_data(path: Path) -> dict:
+def load_language_data(path: Path) -> dict[str, list[str]]:
     """
     Returns: dictionary keyed by language code.
     """
@@ -111,7 +111,7 @@ def generate_random_prompts(end_string, model, random_tokens, n=50, length=12):
 
 def get_weird_tokens(
     model: HookedTransformer, w_e_threshold=0.4, w_u_threshold=15, plot_norms=False
-) -> Int[Tensor, "d_vocab"]:
+) -> tuple[Int[Tensor, "d_vocab"], Int[Tensor, "d_vocab"]]:
     w_u_norm = model.W_U.norm(dim=0)
     w_e_norm = model.W_E.norm(dim=1)
     w_u_ignore = torch.argwhere(w_u_norm > w_u_threshold).flatten()
@@ -146,8 +146,8 @@ def get_weird_tokens(
 
 
 def get_common_tokens(
-    data, model, ignore_tokens, k=100, return_counts=False, return_unsorted_counts=False
-) -> Tensor:
+    data, model, ignore_tokens, k=100
+) -> tuple[Tensor, Tensor]:
     """Get top common german tokens excluding punctuation"""
     token_counts = torch.zeros(model.cfg.d_vocab).to(get_device())
     for example in tqdm(data):
@@ -183,12 +183,8 @@ def get_common_tokens(
     )[:, 1].flatten()
     token_counts[punctuation_tokens] = 0
     token_counts[ignore_tokens] = 0
-    if return_unsorted_counts:
-        return token_counts
     top_counts, top_tokens = torch.topk(token_counts, k)
-    if return_counts:
-        return top_counts, top_tokens
-    return top_tokens
+    return top_counts, top_tokens
 
 
 def get_context_effect(
@@ -275,5 +271,4 @@ def get_mlp_activations(
             act = model.hook_dict[act_label].ctx["activation"][:, 10:400, :]
         act = einops.rearrange(act, "batch pos n_neurons -> (batch pos) n_neurons")
         acts.append(act)
-    acts = torch.concat(acts, dim=0)
-    return acts
+    return torch.concat(acts, dim=0)
