@@ -12,6 +12,10 @@ from transformer_lens.hook_points import HookPoint
 import einops
 
 
+def get_device():
+    return "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+
+
 def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
     model = HookedTransformer.from_pretrained(
         model_name,
@@ -19,7 +23,7 @@ def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
         center_unembed=True,
         center_writing_weights=True,
         fold_ln=True,
-        device="cuda" if torch.cuda.is_available() else "cpu",
+        device=get_device()
     )
     return model
 
@@ -98,7 +102,7 @@ def generate_random_prompts(end_string, model, random_tokens, n=50, length=12):
     end_tokens = model.to_tokens(end_string).flatten()[1:]
     prompts = []
     for i in range(n):
-        prompt = get_random_selection(random_tokens, n=length).cuda()
+        prompt = get_random_selection(random_tokens, n=length).to(get_device())
         prompt = torch.cat([prompt, end_tokens])
         prompts.append(prompt)
     prompts = torch.stack(prompts)
@@ -145,7 +149,7 @@ def get_common_tokens(
     data, model, ignore_tokens, k=100, return_counts=False, return_unsorted_counts=False
 ) -> Tensor:
     """Get top common german tokens excluding punctuation"""
-    token_counts = torch.zeros(model.cfg.d_vocab).cuda()
+    token_counts = torch.zeros(model.cfg.d_vocab).to(get_device())
     for example in tqdm(data):
         tokens = model.to_tokens(example)
         for token in tokens[0]:
