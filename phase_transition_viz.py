@@ -105,7 +105,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
             y=grouped_trigram_loss["50%"],
             mode="lines",
             line=dict(color=line_color_1, width=2),
-            name="Trigram Loss",
+            name="Trigram loss",
         )
     )
     fig.update_layout(
@@ -145,7 +145,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
             y=grouped_german_loss["50%"],
             mode="lines",
             line=dict(color=line_color_2, width=2),
-            name="German Loss",
+            name="German loss",
         )
     )
     fig.update_layout(
@@ -184,7 +184,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
             y=grouped_english_loss["50%"],
             mode="lines",
             line=dict(color=line_color_2, width=2),
-            name="English Loss",
+            name="English loss",
         )
     )
     fig.update_layout(
@@ -192,7 +192,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         xaxis_title="Checkpoint",
         yaxis_title="Loss",
         font=dict(size=24, family="Times New Roman, Times, serif"),
-        yaxis=dict(range=[0, 12])
+        yaxis=dict(range=[0, 12]),
     )
 
     fig.write_image(image_dir.joinpath("phase_transition.png"), width=2000)

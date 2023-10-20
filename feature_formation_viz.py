@@ -66,8 +66,9 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
     ][["NeuronLabel", "F1"]].copy()
     accurate_f1_neurons = accurate_f1_neurons.sort_values(by="F1", ascending=False)
+    num_neurons = len(accurate_f1_neurons["NeuronLabel"].unique())
     print(
-        len(accurate_f1_neurons["NeuronLabel"].unique()),
+        num_neurons,
         "neurons with an F1 > 0.85 for German text recognition at any point during training.",
     )
     good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()
@@ -86,14 +87,15 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
 
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color='rgba(31,119,180,0.2)', showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor='rgba(31,119,180,0.2)', line_color='rgba(31,119,180,0.2)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median of Other<br>Context Neurons"))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median of other<br>German neurons"))
     fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
     fig.update_layout(
-        title="F1 scores of German context neurons", 
+        title=f"F1 scores of German neurons (N={num_neurons})", 
         xaxis_title="Checkpoint", 
         yaxis_title="F1 score", 
         font=dict(size=24, family="Times New Roman, Times, serif"))
 
+    # FIGURE 3
     fig.write_image(image_dir.joinpath("top_f1s_with_quartiles.png"), width=2000)
 
     layer_vals = np.random.randint(0, model.cfg.n_layers, good_mcc_neurons.size)
