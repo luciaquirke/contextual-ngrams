@@ -354,7 +354,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     save_path = os.path.join(args.output_dir, args.model)
-
     os.makedirs(save_path, exist_ok=True)
 
     process_data(args.model, Path(save_path), Path(args.data_dir))
