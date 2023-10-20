@@ -106,66 +106,6 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
         pickle.dump(dla_df, f)
 
 
-def viz(model_name: str, save_path: Path, image_path: Path, data_path: Path):
-    with open("dla_df_all.pkl", "rb") as f:
-        dla_df_all_neurons = pickle.load(f)
-
-    dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Line(
-            x=dla_df["Checkpoint"],
-            y=dla_df["DLA diff"],
-            mode="lines",
-            line=dict(color="#FF7F0E", width=2),
-            name="L3N669",
-        )
-    )
-
-    dla_df["DLA Difference"] = dla_df["DLA diff"]
-    fig = px.line(
-        dla_df,
-        x="Checkpoint",
-        y="DLA Difference",
-        color="Neuron",
-        title="Difference between average DLA of frequent German and English tokens",
-    )
-    fig.update_layout(
-        font=dict(size=24, family="Times New Roman, Times, serif"), width=2000
-    )
-    fig.write_image(image_path.joinpath("dla_diff.png"))
-
-    dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
-    dla_df["DLA Difference"] = dla_df["DLA diff"]
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Line(
-            x=dla_df["Checkpoint"],
-            y=dla_df["English DLA"],
-            mode="lines",
-            name="German DLA",
-        )
-    )
-    fig.add_trace(
-        go.Line(
-            x=dla_df["Checkpoint"],
-            y=dla_df["German DLA"],
-            mode="lines",
-            name="English DLA",
-        )
-    )
-    fig.update_layout(
-        font=dict(size=24, family="Times New Roman, Times, serif"),
-        width=2000,
-        title="Average DLA of L3N669 on frequent German and English tokens",
-        xaxis_title="Checkpoint",
-        yaxis_title="DLA",
-    )
-    fig.write_image(image_path.joinpath("dla_german_english.png"))
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -186,5 +126,4 @@ if __name__ == "__main__":
     os.makedirs(save_path, exist_ok=True)
     os.makedirs(save_image_path, exist_ok=True)
 
-    # process_data(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
-    viz(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
+    process_data(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
