@@ -194,8 +194,6 @@ def analyze_features(
     non_german_data = lang_data["en"]
 
     probe_dfs = []
-    # layer_ablation_dfs = []
-    # lang_loss_dfs = []
     with tqdm(total=num_checkpoints * n_layers) as pbar:
         for checkpoint in range(num_checkpoints):
             model = get_model(model_name, checkpoint)
@@ -204,26 +202,14 @@ def analyze_features(
                     model, checkpoint, layer, german_data, non_german_data
                 )
                 probe_dfs.append(partial_probe_df)
-
-                # partial_layer_ablation_df = get_layer_ablation_loss(
-                #     model, german_data, checkpoint, layer
-                # )
-                # layer_ablation_dfs.append(partial_layer_ablation_df)
-
                 pbar.update(1)
-
-            # lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
 
             # Save progress to allow for checkpointing the analysis
             with open(
                 output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "wb"
             ) as f:
                 pickle.dump(
-                    {
-                        "probe": probe_dfs,
-                        # "layer_ablation": layer_ablation_dfs,
-                        # "lang_loss": lang_loss_dfs,
-                    },
+                    {"probe": probe_dfs},
                     f,
                 )
 
@@ -241,16 +227,6 @@ def analyze_features(
         output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "wb", compresslevel=9
     ) as f:
         pickle.dump(data["probe"], f)
-
-    # with gzip.open(
-    #     output_dir.joinpath("checkpoint_lang_loss_df.pkl.gz"), "wb", compresslevel=9
-    # ) as f:
-    #     pickle.dump(data['lang_loss'], f)
-
-    # with gzip.open(
-    #     output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "wb", compresslevel=9
-    # ) as f:
-    #     pickle.dump(data['layer_ablation'], f)
 
 
 if __name__ == "__main__":
