@@ -16,6 +16,6 @@ Generate data by running each script from the command line:
 
 Some scripts are extremely slow because they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
 
-Then replicate figures by running figures.py
+Then replicate figures by running `figures.py`
 
 `python figures.py --model pythia-70m`
