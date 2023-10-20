@@ -10,16 +10,16 @@ Use the included Dockerfile, or alternatively install PyTorch then run:
 
 ### Instructions
 
-Generate data from the command line:
+Generate data by running each file from the command line:
 
 `python feature_formation.py --model pythia-70m`
 
 `python contextual_ngram_formation.py --model pythia-70m`
 
+`. . .`
+
 Some scripts are extremely slow because they run over hundreds of model checkpoints. We advise using an A6000 with 100GB of RAM or equivalent.
 
-Replicate figures by running the corresponding file, suffixed with `_viz`:
+Then replicate figures by running figures.py
 
-`python feature_formation_viz.py --model pythia-70m`
-
-`python contextual_ngram_formation_viz.py --model pythia-70m`
+`python figures.py --model pythia-70m`
