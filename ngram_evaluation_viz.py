@@ -55,34 +55,34 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
 
 
     # Calculate percentiles at each x-coordinate
-    percentiles = [0.05, 0.5, 0.95]
+    percentiles = [0.25, 0.5, 0.75]
     grouped = context_effect_df.groupby('Checkpoint')['Original Loss'].describe(percentiles=percentiles).reset_index()
     # Plot
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     shade_color_1 = 'rgba(255,0,0,0.2)'
     line_color_1 = 'rgb(255,0,0)'
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color=shade_color_1, showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor=shade_color_1, line_color=shade_color_1, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_1, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_1, line_color=shade_color_1, name="25th-75th percentile", showlegend=False))
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_1, width=2), name="Trigram loss"))
     fig.update_layout(title=f"German trigram (N={num_trigrams}) losses over checkpoints", xaxis_title="Checkpoint", yaxis_title="Loss")
 
-    grouped = context_effect_df.groupby('Checkpoint')['Ablation increase (fraction)'].describe(percentiles=percentiles).reset_index()
-    # Plot
-    shade_color_2 = 'rgba(0,128,255,0.2)'
-    line_color_2 = 'rgb(0,128,255)'
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False), secondary_y=True)
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False), secondary_y=True)
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation loss increase"), secondary_y=True)
-    fig.update_layout(title=f"German trigram (N={num_trigrams}) loss increases from ablating the German neuron", xaxis_title="Checkpoint", yaxis_title="Loss increase")
-
-    # grouped = context_effect_df.groupby('Checkpoint')['Ablation increase'].describe(percentiles=percentiles).reset_index()
+    # grouped = context_effect_df.groupby('Checkpoint')['Ablation increase (fraction)'].describe(percentiles=percentiles).reset_index()
     # # Plot
     # shade_color_2 = 'rgba(0,128,255,0.2)'
     # line_color_2 = 'rgb(0,128,255)'
-    # fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False))
-    # fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False))
-    # fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation loss increase"))
+    # fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False), secondary_y=True)
+    # fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False), secondary_y=True)
+    # fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation loss increase"), secondary_y=True)
     # fig.update_layout(title=f"German trigram (N={num_trigrams}) loss increases from ablating the German neuron", xaxis_title="Checkpoint", yaxis_title="Loss increase")
+
+    grouped = context_effect_df.groupby('Checkpoint')['Ablated Loss'].describe(percentiles=percentiles).reset_index()
+    # Plot
+    shade_color_2 = 'rgba(0,128,255,0.2)'
+    line_color_2 = 'rgb(0,128,255)'
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['25%'], fill=None, mode='lines', line_color=shade_color_2, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['75%'], fill='tonexty', fillcolor=shade_color_2, line_color=shade_color_2, name="25th-75th percentile", showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color_2, width=2), name="Ablation loss"))
+    fig.update_layout(title=f"German trigram (N={num_trigrams}) loss increases from ablating the German neuron", xaxis_title="Checkpoint", yaxis_title="Loss increase")
 
     line_color_3 = 'rgb(255,128,0)'
     context_neuron_probe_df = probe_df[probe_df["NeuronLabel"] == "L3N669"].copy()
@@ -96,7 +96,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         #yaxis=dict(type='log'),
         #yaxis2=dict(type='linear')
         yaxis=dict(range=[0, 12]),
-        yaxis2=dict(range=[-0.15, 2.05]),
+        yaxis2=dict(range=[0.4, 1]),
         font=dict(size=24)
     )
 
