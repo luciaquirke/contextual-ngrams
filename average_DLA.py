@@ -52,7 +52,7 @@ def get_all_non_letter_tokens(model: HookedTransformer):
     return torch.LongTensor(letter_tokens)
 
 
-def process_data(model_name: str, save_path: Path, image_path: Path, data_path: Path):
+def process_data(model_name: str, save_path: Path, data_path: Path):
     model = get_model(model_name, 0)
     num_checkpoints = preload_models(model_name)
     lang_data = load_language_data(data_path)
@@ -121,9 +121,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     save_path = os.path.join(args.output_dir, args.model)
-    save_image_path = os.path.join(save_path, "images")
-
     os.makedirs(save_path, exist_ok=True)
-    os.makedirs(save_image_path, exist_ok=True)
 
-    process_data(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
+    process_data(args.model, Path(save_path), Path(args.data_dir))
