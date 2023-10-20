@@ -30,9 +30,7 @@ def set_seeds():
 
 def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     set_seeds()
-    with open(
-            output_dir.joinpath("checkpoint_probe_df.pkl"), "rb"
-        ) as f:
+    with open(output_dir.joinpath("checkpoint_probe_df.pkl"), "rb") as f:
         probe_df = pickle.load(f)
 
     checkpoints = []
@@ -42,17 +40,29 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
         top_probe.append(checkpoint_df["MCC"].max())
         checkpoints.append(checkpoint)
 
-    with open(
-            output_dir.joinpath("context_effect_split.csv"), "r"
-        ) as f:
+    with open(output_dir.joinpath("context_effect_split.csv"), "r") as f:
         context_effect_df = pd.read_csv(f)
 
-    melt_df = context_effect_df.melt(id_vars=["Checkpoint"], var_name="Type", value_name="LossIncrease", value_vars=["Direct Effect", "Indirect Effect"])
-    fig = px.line(melt_df, x="Checkpoint", y="LossIncrease", color="Type", title="Direct and indirect ablation effect of L3N669 on German text")
-    fig.update_layout(xaxis_title="Checkpoint", yaxis_title="Loss increase", font=dict(size=24))
+    melt_df = context_effect_df.melt(
+        id_vars=["Checkpoint"],
+        var_name="Type",
+        value_name="LossIncrease",
+        value_vars=["Direct Effect", "Indirect Effect"],
+    )
+    fig = px.line(
+        melt_df,
+        x="Checkpoint",
+        y="LossIncrease",
+        color="Type",
+        title="Direct and indirect ablation effect of L3N669 on German text",
+    )
+    fig.update_layout(
+        xaxis_title="Checkpoint",
+        yaxis_title="Loss increase",
+        font=dict(size=24, family="Times New Roman, Times, serif"),
+    )
 
     fig.write_image(image_dir.joinpath("direct_indirect_effect.png"), width=2000)
-
 
 
 if __name__ == "__main__":
@@ -73,6 +83,5 @@ if __name__ == "__main__":
 
     os.makedirs(save_path, exist_ok=True)
     os.makedirs(save_image_path, exist_ok=True)
-    
-    process_data(args.model, Path(save_path), Path(save_image_path))
 
+    process_data(args.model, Path(save_path), Path(save_image_path))

@@ -19,7 +19,13 @@ from tqdm.auto import tqdm
 
 from neel_plotly import *
 
-from utils import get_model, preload_models, load_language_data, get_common_tokens, get_weird_tokens
+from utils import (
+    get_model,
+    preload_models,
+    load_language_data,
+    get_common_tokens,
+    get_weird_tokens,
+)
 
 
 SEED = 42
@@ -41,7 +47,7 @@ def get_all_non_letter_tokens(model: HookedTransformer):
     letter_tokens = []
     for token in all_tokens:
         str_token = model.to_single_str_token(token)
-        if not bool(re.search(r'[a-zA-Z]', str_token)):
+        if not bool(re.search(r"[a-zA-Z]", str_token)):
             letter_tokens.append(token)
     return torch.LongTensor(letter_tokens)
 
@@ -53,13 +59,22 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
     all_ignore, _ = get_weird_tokens(model, plot_norms=False)
 
     non_letter_tokens = get_all_non_letter_tokens(model)
-    ignore_and_non_letter = torch.LongTensor(list(set(all_ignore.tolist()).union(set(non_letter_tokens.tolist()))))
-    german_counts, german_tokens = get_common_tokens(lang_data['de'], model, ignore_and_non_letter, k=200, return_counts=True)
-    english_counts, english_tokens = get_common_tokens(lang_data['en'], model, ignore_and_non_letter, k=200, return_counts=True)
+    ignore_and_non_letter = torch.LongTensor(
+        list(set(all_ignore.tolist()).union(set(non_letter_tokens.tolist())))
+    )
+    german_counts, german_tokens = get_common_tokens(
+        lang_data["de"], model, ignore_and_non_letter, k=200, return_counts=True
+    )
+    english_counts, english_tokens = get_common_tokens(
+        lang_data["en"], model, ignore_and_non_letter, k=200, return_counts=True
+    )
 
     probe_df = load_probe_data(save_path)
 
-    neurons = probe_df[(probe_df["F1"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "F1"]].copy()
+    neurons = probe_df[
+        (probe_df["F1"] > 0.85)
+        & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
+    ][["NeuronLabel", "F1"]].copy()
     neurons = neurons.sort_values(by="F1", ascending=False)
     good_neurons = neurons["NeuronLabel"].unique()
     print(len(good_neurons))
@@ -73,35 +88,81 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
             dla = model.W_out[layer, neuron, :] @ model.W_U
             german_dla = dla[german_tokens].mean().item()
             english_dla = dla[english_tokens].mean().item()
-            dla_data.append([checkpoint, german_dla, english_dla, german_dla-english_dla, neuron_label])
-    dla_df = pd.DataFrame(dla_data, columns=["Checkpoint", "English DLA", "German DLA", "DLA diff", "Neuron"])
+            dla_data.append(
+                [
+                    checkpoint,
+                    german_dla,
+                    english_dla,
+                    german_dla - english_dla,
+                    neuron_label,
+                ]
+            )
+    dla_df = pd.DataFrame(
+        dla_data,
+        columns=["Checkpoint", "English DLA", "German DLA", "DLA diff", "Neuron"],
+    )
 
-    with open('dla_df_all.pkl', 'wb') as f:
+    with open("dla_df_all.pkl", "wb") as f:
         pickle.dump(dla_df, f)
 
 
 def viz(model_name: str, save_path: Path, image_path: Path, data_path: Path):
-    with open('dla_df_all.pkl', 'rb') as f:
+    with open("dla_df_all.pkl", "rb") as f:
         dla_df_all_neurons = pickle.load(f)
 
     dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
 
     fig = go.Figure()
-    fig.add_trace(go.Line(x=dla_df['Checkpoint'], y=dla_df['DLA diff'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
+    fig.add_trace(
+        go.Line(
+            x=dla_df["Checkpoint"],
+            y=dla_df["DLA diff"],
+            mode="lines",
+            line=dict(color="#FF7F0E", width=2),
+            name="L3N669",
+        )
+    )
 
     dla_df["DLA Difference"] = dla_df["DLA diff"]
-    fig = px.line(dla_df, x="Checkpoint", y="DLA Difference", color="Neuron", title="Difference between average DLA of frequent German and English tokens")
-    fig.update_layout(font=dict(size=24), width=2000)
+    fig = px.line(
+        dla_df,
+        x="Checkpoint",
+        y="DLA Difference",
+        color="Neuron",
+        title="Difference between average DLA of frequent German and English tokens",
+    )
+    fig.update_layout(
+        font=dict(size=24, family="Times New Roman, Times, serif"), width=2000
+    )
     fig.write_image(image_path.joinpath("dla_diff.png"))
-
 
     dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
     dla_df["DLA Difference"] = dla_df["DLA diff"]
 
     fig = go.Figure()
-    fig.add_trace(go.Line(x=dla_df['Checkpoint'], y=dla_df['English DLA'], mode='lines', name="German DLA"))
-    fig.add_trace(go.Line(x=dla_df['Checkpoint'], y=dla_df['German DLA'], mode='lines', name="English DLA"))
-    fig.update_layout(font=dict(size=24), width=2000, title="Average DLA of L3N669 on frequent German and English tokens", xaxis_title="Checkpoint", yaxis_title="DLA")
+    fig.add_trace(
+        go.Line(
+            x=dla_df["Checkpoint"],
+            y=dla_df["English DLA"],
+            mode="lines",
+            name="German DLA",
+        )
+    )
+    fig.add_trace(
+        go.Line(
+            x=dla_df["Checkpoint"],
+            y=dla_df["German DLA"],
+            mode="lines",
+            name="English DLA",
+        )
+    )
+    fig.update_layout(
+        font=dict(size=24, family="Times New Roman, Times, serif"),
+        width=2000,
+        title="Average DLA of L3N669 on frequent German and English tokens",
+        xaxis_title="Checkpoint",
+        yaxis_title="DLA",
+    )
     fig.write_image(image_path.joinpath("dla_german_english.png"))
 
 
@@ -124,7 +185,6 @@ if __name__ == "__main__":
 
     os.makedirs(save_path, exist_ok=True)
     os.makedirs(save_image_path, exist_ok=True)
-    
+
     # process_data(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
     viz(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
-

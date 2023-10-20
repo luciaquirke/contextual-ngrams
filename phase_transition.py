@@ -21,7 +21,13 @@ from tqdm import tqdm
 
 from neel_plotly import *
 
-from utils import get_model, load_language_data, get_common_tokens, generate_random_prompts, get_weird_tokens
+from utils import (
+    get_model,
+    load_language_data,
+    get_common_tokens,
+    generate_random_prompts,
+    get_weird_tokens,
+)
 
 
 SEED = 42
@@ -38,9 +44,7 @@ def set_seeds():
 def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
     set_seeds()
     model = get_model(model_name, 0)
-    with open(
-            output_dir.joinpath("checkpoint_probe_df.pkl"), "rb"
-        ) as f:
+    with open(output_dir.joinpath("checkpoint_probe_df.pkl"), "rb") as f:
         probe_df = pickle.load(f)
     print("Loaded probe_df")
     checkpoints = []
@@ -55,13 +59,15 @@ def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
     english_data = lang_data["en"][:200]
     return checkpoints, german_data, english_data
 
+
 def eval_loss(model, data):
-    '''Mean of mean of token losses for each prompt'''
+    """Mean of mean of token losses for each prompt"""
     losses = []
     for prompt in data:
         loss = model(prompt, return_type="loss")
         losses.append(loss.item())
     return losses
+
 
 def evaluate_checkpoints(model_name, checkpoints, german_data, english_data):
     data = []
@@ -78,10 +84,11 @@ def evaluate_checkpoints(model_name, checkpoints, german_data, english_data):
 
 def process_data(model_name: str, output_dir: Path, data_dir: Path):
     checkpoints, german_data, english_data = load_data(model_name, output_dir, data_dir)
-    
+
     df = evaluate_checkpoints(model_name, checkpoints, german_data, english_data)
-    with open(output_dir.joinpath("general_language_loss.csv"), 'w') as f:
+    with open(output_dir.joinpath("general_language_loss.csv"), "w") as f:
         df.to_csv(f, index=False)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -100,6 +107,5 @@ if __name__ == "__main__":
     save_path = os.path.join(args.output_dir, args.model)
 
     os.makedirs(save_path, exist_ok=True)
-    
-    process_data(args.model, Path(save_path), Path(args.data_dir))
 
+    process_data(args.model, Path(save_path), Path(args.data_dir))

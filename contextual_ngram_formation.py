@@ -34,22 +34,25 @@ def set_seeds():
 
 
 def eval_prompts(prompts, model, pos=-1):
-    '''Mean loss at position in prompts'''
+    """Mean loss at position in prompts"""
     loss = model(prompts, return_type="loss", loss_per_token=True)[:, pos].mean().item()
     return loss
 
 
-def get_deactivate_neurons_fwd_hooks(model: HookedTransformer, prompts: list[str], layer: int, neuron: int):
+def get_deactivate_neurons_fwd_hooks(
+    model: HookedTransformer, prompts: list[str], layer: int, neuron: int
+):
     mean_activation_inactive = get_mean_activation(model, prompts, layer, neuron)
+
     def deactivate_neurons_hook(value, hook):
         value[:, :, neuron] = mean_activation_inactive
         return value
 
-    return [(f'blocks.{layer}.mlp.hook_post', deactivate_neurons_hook)]
+    return [(f"blocks.{layer}.mlp.hook_post", deactivate_neurons_hook)]
 
 
 def save_activation(value, hook):
-    hook.ctx['activation'] = value
+    hook.ctx["activation"] = value
     return value
 
 
@@ -76,9 +79,7 @@ def get_ngram_losses(
 ) -> pd.DataFrame:
     data = []
     for ngram in ngrams:
-        prompts = utils.generate_random_prompts(
-            ngram, model, common_tokens, 100, 20
-        )
+        prompts = utils.generate_random_prompts(ngram, model, common_tokens, 100, 20)
         loss = eval_prompts(prompts, model)
         with model.hooks(fwd_hooks):
             ablated_loss = eval_prompts(prompts, model)
@@ -119,7 +120,7 @@ def get_common_ngrams(
 
 
 def eval_loss(model, data, mean=True):
-    '''Mean of mean of token losses for each prompt'''
+    """Mean of mean of token losses for each prompt"""
     losses = []
     for prompt in data:
         loss = model(prompt, return_type="loss")
@@ -129,18 +130,27 @@ def eval_loss(model, data, mean=True):
     return losses
 
 
-def eval_checkpoint(model: HookedTransformer, probe_df: pd.DataFrame, german_data: list[str], checkpoint: int, layer: int, neuron: int):
+def eval_checkpoint(
+    model: HookedTransformer,
+    probe_df: pd.DataFrame,
+    german_data: list[str],
+    checkpoint: int,
+    layer: int,
+    neuron: int,
+):
     german_loss = eval_loss(model, german_data)
-    f1, mcc = probe_df[(probe_df['Checkpoint']==checkpoint)&(probe_df['Layer']==layer)&(probe_df['Neuron']==neuron)][['F1', 'MCC']].values[0]
+    f1, mcc = probe_df[
+        (probe_df["Checkpoint"] == checkpoint)
+        & (probe_df["Layer"] == layer)
+        & (probe_df["Neuron"] == neuron)
+    ][["F1", "MCC"]].values[0]
     return [checkpoint, german_loss, f1, mcc]
 
 
 def get_common_tokens(model, prompts):
-    all_ignore, _ = utils.get_weird_tokens(model, plot_norms=False)    
+    all_ignore, _ = utils.get_weird_tokens(model, plot_norms=False)
 
-    common_tokens = utils.get_common_tokens(
-        prompts, model, all_ignore, k=100
-    )
+    common_tokens = utils.get_common_tokens(prompts, model, all_ignore, k=100)
     return common_tokens
 
 
@@ -154,14 +164,14 @@ def get_random_trigrams(model, prompts, k=20):
 
 
 def build_dfs(
-        model_name: HookedTransformer,
-        lang_data: dict,
-        probe_df: pd.DataFrame,
-        num_checkpoints: int, 
-        layer: int,
-        neuron: int,
-        save_path: Path 
-    ):
+    model_name: HookedTransformer,
+    lang_data: dict,
+    probe_df: pd.DataFrame,
+    num_checkpoints: int,
+    layer: int,
+    neuron: int,
+    save_path: Path,
+):
     german_data = lang_data["de"]
     non_german_data = lang_data["en"]
 
@@ -201,23 +211,34 @@ def build_dfs(
         for neuron_name in good_neurons:
             good_layer, good_neuron = neuron_name[1:].split("N")
             good_layer, good_neuron = int(good_layer), int(good_neuron)
-            activations = get_mean_activation(model, non_german_data, good_layer, good_neuron)
+            activations = get_mean_activation(
+                model, non_german_data, good_layer, good_neuron
+            )
+
             def tmp_hook(value, hook):
                 value[:, :, good_neuron] = activations
                 return value
-            tmp_hooks = [(f'blocks.{good_layer}.mlp.hook_post', tmp_hook)]
+
+            tmp_hooks = [(f"blocks.{good_layer}.mlp.hook_post", tmp_hook)]
             original_loss = eval_loss(model, german_data, mean=True)
             with model.hooks(tmp_hooks):
                 ablated_loss = eval_loss(model, german_data, mean=True)
-            good_neuron_ablation_data.append([neuron_name, checkpoint, original_loss, ablated_loss])
+            good_neuron_ablation_data.append(
+                [neuron_name, checkpoint, original_loss, ablated_loss]
+            )
 
     # context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])
     # context_neuron_df.to_csv(save_path.joinpath("checkpoint_eval.csv"), index=False)
 
-    good_neuron_ablation_df = pd.DataFrame(good_neuron_ablation_data, columns=["Label", "Checkpoint", "OriginalLoss", "AblatedLoss"])
-    good_neuron_ablation_df["AblationIncrease"] = good_neuron_ablation_df["AblatedLoss"] - good_neuron_ablation_df["OriginalLoss"]
+    good_neuron_ablation_df = pd.DataFrame(
+        good_neuron_ablation_data,
+        columns=["Label", "Checkpoint", "OriginalLoss", "AblatedLoss"],
+    )
+    good_neuron_ablation_df["AblationIncrease"] = (
+        good_neuron_ablation_df["AblatedLoss"] - good_neuron_ablation_df["OriginalLoss"]
+    )
     good_neuron_ablation_df.to_csv("data/checkpoint_ablation_data.csv")
-    
+
     # logit_attrs_df = pd.DataFrame()
     # for i, logit_attribution in enumerate(logit_attrs):
     #     temp_df = pd.DataFrame()
@@ -230,16 +251,22 @@ def build_dfs(
     with gzip.open(
         save_path.joinpath("checkpoint_ablation_data.pkl.gz"), "wb", compresslevel=9
     ) as f_out:
-        pickle.dump({
-            # "ctx_neuron": context_neuron_df,
-            "good_neuron": good_neuron_ablation_df,
-            # "ngram": ngram_loss_dfs,
-            # "logit_attr": logit_attrs_df,
-        }, f_out)
-    
+        pickle.dump(
+            {
+                # "ctx_neuron": context_neuron_df,
+                "good_neuron": good_neuron_ablation_df,
+                # "ngram": ngram_loss_dfs,
+                # "logit_attr": logit_attrs_df,
+            },
+            f_out,
+        )
+
 
 def get_good_f1_neurons(probe_df: pd.DataFrame):
-    neurons = probe_df[(probe_df["F1"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "F1"]].copy()
+    neurons = probe_df[
+        (probe_df["F1"] > 0.85)
+        & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
+    ][["NeuronLabel", "F1"]].copy()
     neurons = neurons.sort_values(by="F1", ascending=False)
     good_neurons = neurons["NeuronLabel"].unique()
 
@@ -252,18 +279,16 @@ def load_probe_data(save_path):
 
 
 def analyze_contextual_ngrams(
-        model_name: str, 
-        layer: int,
-        neuron: int,
-        save_path: Path,
-        data_path: Path
-    ):
+    model_name: str, layer: int, neuron: int, save_path: Path, data_path: Path
+):
     set_seeds()
     num_checkpoints = preload_models(model_name)
     lang_data = load_language_data(data_path)
     probe_df = load_probe_data(save_path)
 
-    build_dfs(model_name, lang_data, probe_df, num_checkpoints, layer, neuron, save_path)
+    build_dfs(
+        model_name, lang_data, probe_df, num_checkpoints, layer, neuron, save_path
+    )
 
 
 if __name__ == "__main__":
@@ -284,6 +309,7 @@ if __name__ == "__main__":
 
     save_path = os.path.join(args.output_dir, args.model)
     os.makedirs(save_path, exist_ok=True)
-    
-    analyze_contextual_ngrams(args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir))
 
+    analyze_contextual_ngrams(
+        args.model, args.layer, args.neuron, Path(save_path), Path(args.data_dir)
+    )

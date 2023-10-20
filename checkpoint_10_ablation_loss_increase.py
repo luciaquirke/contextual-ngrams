@@ -6,8 +6,12 @@ import pandas as pd
 import numpy as np
 from utils import get_model, load_language_data, eval_loss
 
+
 def get_good_mcc_neurons(probe_df: pd.DataFrame):
-    neurons = probe_df[(probe_df["MCC"] > 0.85) & (probe_df["MeanGermanActivation"]>probe_df["MeanNonGermanActivation"])][["NeuronLabel", "MCC"]].copy()
+    neurons = probe_df[
+        (probe_df["MCC"] > 0.85)
+        & (probe_df["MeanGermanActivation"] > probe_df["MeanNonGermanActivation"])
+    ][["NeuronLabel", "MCC"]].copy()
     neurons = neurons.sort_values(by="MCC", ascending=False)
     good_neurons = neurons["NeuronLabel"].unique()[:50]
 
@@ -32,8 +36,16 @@ def main(model_name: str, save_path: Path, output_path: Path):
     for neuron_label in good_neurons:
         layer, neuron = neuron_label[1:].split("N")
         layer, neuron = int(layer), int(neuron)
-        mean_activation_german = probe_df[(probe_df["Checkpoint"] == checkpoint) & (probe_df["Layer"] == layer) & (probe_df["Neuron"] == neuron)]["MeanGermanActivation"].item()
-        mean_activation_english = probe_df[(probe_df["Checkpoint"] == checkpoint) & (probe_df["Layer"] == layer) & (probe_df["Neuron"] == neuron)]["MeanEnglishActivation"].item()
+        mean_activation_german = probe_df[
+            (probe_df["Checkpoint"] == checkpoint)
+            & (probe_df["Layer"] == layer)
+            & (probe_df["Neuron"] == neuron)
+        ]["MeanGermanActivation"].item()
+        mean_activation_english = probe_df[
+            (probe_df["Checkpoint"] == checkpoint)
+            & (probe_df["Layer"] == layer)
+            & (probe_df["Neuron"] == neuron)
+        ]["MeanEnglishActivation"].item()
         layer_ablations[layer]["Neurons"].append(neuron)
         layer_ablations[layer]["English"].append(mean_activation_english)
         layer_ablations[layer]["German"].append(mean_activation_german)
@@ -42,17 +54,23 @@ def main(model_name: str, save_path: Path, output_path: Path):
         neurons = torch.LongTensor(neurons)
         activations = torch.FloatTensor(activation).cuda()
         assert neurons.shape == activations.shape
+
         def layer_ablation_hook(value, hook):
             value[:, :, neurons] = activations
-        hook_point = f'blocks.{layer}.mlp.hook_post'
+
+        hook_point = f"blocks.{layer}.mlp.hook_post"
         return [(hook_point, layer_ablation_hook)]
 
     ablate_german_hooks = []
     for layer in layers:
-        ablate_german_hooks += get_layer_ablation_hook(layer_ablations[layer]["Neurons"], layer_ablations[layer]["English"], layer)
+        ablate_german_hooks += get_layer_ablation_hook(
+            layer_ablations[layer]["Neurons"], layer_ablations[layer]["English"], layer
+        )
     ablate_english_hooks = []
     for layer in layers:
-        ablate_english_hooks += get_layer_ablation_hook(layer_ablations[layer]["Neurons"], layer_ablations[layer]["German"], layer)
+        ablate_english_hooks += get_layer_ablation_hook(
+            layer_ablations[layer]["Neurons"], layer_ablations[layer]["German"], layer
+        )
 
     model = get_model(model_name, checkpoint)
     german_loss = eval_loss(model, german_data[:200], mean=False)
@@ -63,7 +81,10 @@ def main(model_name: str, save_path: Path, output_path: Path):
         english_loss_ablated = eval_loss(model, english_data[:200], mean=False)
 
     # %%
-    losses = [[ablated - orig for ablated, orig in zip(german_loss_ablated, german_loss)], [ablated - orig for ablated, orig in zip(english_loss_ablated, english_loss)]]
+    losses = [
+        [ablated - orig for ablated, orig in zip(german_loss_ablated, german_loss)],
+        [ablated - orig for ablated, orig in zip(english_loss_ablated, english_loss)],
+    ]
     names = ["German", "English"]
 
     # %%
@@ -73,11 +94,24 @@ def main(model_name: str, save_path: Path, output_path: Path):
     ci_95 = [Z * (np.std(loss) / np.sqrt(len(loss))) for loss in losses]
 
     # Create bar plot
-    fig = go.Figure(data=[
-        go.Bar(name='Loss', x=names, y=means, error_y=dict(type='data', array=ci_95, visible=True))
-    ])
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                name="Loss",
+                x=names,
+                y=means,
+                error_y=dict(type="data", array=ci_95, visible=True),
+            )
+        ]
+    )
 
     # Update layout
-    fig.update_layout(title='Ablation Loss Increase by Language for Checkpoint 10', xaxis_title='Language', yaxis_title='Loss increase', width=600)
+    fig.update_layout(
+        title="Ablation Loss Increase by Language for Checkpoint 10",
+        font=dict(size=24, family="Times New Roman, Times, serif"),
+        xaxis_title="Language",
+        axis_title="Loss increase",
+        width=600,
+    )
 
     fig.save_image(output_path.joinpath("ablation_loss_increase.png"))
