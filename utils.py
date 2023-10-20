@@ -13,7 +13,13 @@ import einops
 
 
 def get_device():
-    return "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    return (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
 
 
 def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
@@ -23,7 +29,7 @@ def get_model(model_name: str, checkpoint: int) -> HookedTransformer:
         center_unembed=True,
         center_writing_weights=True,
         fold_ln=True,
-        device=get_device()
+        device=get_device(),
     )
     return model
 
@@ -145,9 +151,7 @@ def get_weird_tokens(
     return all_ignore, not_ignore
 
 
-def get_common_tokens(
-    data, model, ignore_tokens, k=100
-) -> tuple[Tensor, Tensor]:
+def get_common_tokens(data, model, ignore_tokens, k=100) -> tuple[Tensor, Tensor]:
     """Get top common german tokens excluding punctuation"""
     token_counts = torch.zeros(model.cfg.d_vocab).to(get_device())
     for example in tqdm(data):

@@ -49,7 +49,9 @@ def set_seeds():
 
 def load_data(
     model_name: str, output_dir: Path, data_dir: Path
-) -> tuple[pd.DataFrame, list[int], np.ndarray, list[str], tuple[torch.Tensor, torch.Tensor]]:
+) -> tuple[
+    pd.DataFrame, list[int], np.ndarray, list[str], tuple[torch.Tensor, torch.Tensor]
+]:
     set_seeds()
     model = get_model(model_name, 0)
     with open(output_dir.joinpath("checkpoint_probe_df.pkl"), "rb") as f:

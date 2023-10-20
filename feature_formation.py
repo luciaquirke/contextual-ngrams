@@ -43,7 +43,9 @@ def train_probe(
         lr_model.fit(x, y)
         return lr_model
 
-    def get_probe_score(lr_model: LogisticRegression, x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
+    def get_probe_score(
+        lr_model: LogisticRegression, x: np.ndarray, y: np.ndarray
+    ) -> tuple[float, float]:
         preds = lr_model.predict(x)
         f1 = f1_score(y, preds)
         mcc = matthews_corrcoef(y, preds)
@@ -62,7 +64,7 @@ def train_probe(
 
 
 def save_activation(value, hook):
-    hook.ctx['activation'] = value
+    hook.ctx["activation"] = value
     return value
 
 
@@ -183,7 +185,7 @@ def analyze_features(
     lang_data: dict,
     output_dir: Path,
 ) -> None:
-    """Collect several dataframes covering whole layer ablation losses, losses on Europarl languages, 
+    """Collect several dataframes covering whole layer ablation losses, losses on Europarl languages,
     and 1-sparse neuron probe performances."""
     model = get_model(model_name, 0)
     n_layers = model.cfg.n_layers
@@ -196,7 +198,7 @@ def analyze_features(
     # lang_loss_dfs = []
     with tqdm(total=num_checkpoints * n_layers) as pbar:
         for checkpoint in range(num_checkpoints):
-            model = get_model(model_name, checkpoint)            
+            model = get_model(model_name, checkpoint)
             for layer in range(n_layers):
                 partial_probe_df = get_layer_probe_performance(
                     model, checkpoint, layer, german_data, non_german_data
@@ -209,7 +211,7 @@ def analyze_features(
                 # layer_ablation_dfs.append(partial_layer_ablation_df)
 
                 pbar.update(1)
-                
+
             # lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
 
             # Save progress to allow for checkpointing the analysis
@@ -226,7 +228,9 @@ def analyze_features(
                 )
 
     # Open the pickle file
-    with open(output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb") as f:
+    with open(
+        output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb"
+    ) as f:
         data = pickle.load(f)
 
     # Concatenate the dataframes
@@ -236,7 +240,7 @@ def analyze_features(
     with gzip.open(
         output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "wb", compresslevel=9
     ) as f:
-        pickle.dump(data['probe'], f)
+        pickle.dump(data["probe"], f)
 
     # with gzip.open(
     #     output_dir.joinpath("checkpoint_lang_loss_df.pkl.gz"), "wb", compresslevel=9
@@ -274,9 +278,5 @@ if __name__ == "__main__":
 
     # Load probe training data
     lang_data = load_language_data(Path(args.dataset_dir))
-    
-    analyze_features(
-        args.model, num_checkpoints, lang_data, Path(save_path)
-    )
 
-
+    analyze_features(args.model, num_checkpoints, lang_data, Path(save_path))
