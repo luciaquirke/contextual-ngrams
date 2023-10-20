@@ -28,9 +28,10 @@ from utils import (
     get_common_tokens,
     generate_random_prompts,
     get_weird_tokens,
+    get_device
 )
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = get_device()
 torch.autograd.set_grad_enabled(False)
 torch.set_grad_enabled(False)
 

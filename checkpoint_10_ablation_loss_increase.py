@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import numpy as np
-from utils import get_model, load_language_data, eval_loss
+from utils import get_model, load_language_data, eval_loss, get_device
 
 
 def get_good_mcc_neurons(probe_df: pd.DataFrame):
@@ -52,7 +52,7 @@ def main(model_name: str, save_path: Path, output_path: Path):
 
     def get_layer_ablation_hook(neurons, activation, layer):
         neurons = torch.LongTensor(neurons)
-        activations = torch.FloatTensor(activation).cuda()
+        activations = torch.FloatTensor(activation).to(get_device())
         assert neurons.shape == activations.shape
 
         def layer_ablation_hook(value, hook):
