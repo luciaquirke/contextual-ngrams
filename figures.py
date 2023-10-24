@@ -20,6 +20,13 @@ from utils import get_model
 SEED = 42
 FIGURE_WIDTH = 1400
 
+COLOR_1 = "rgb(99,110,250)" # Blue
+COLOR_2 = "rgb(239,85,59)" # Red
+COLOR_3 = "rgb(0,204,150)" # Green
+COLOR_1_shaded = "rgba(99,110,250, 0.2)" # Blue
+COLOR_2_shaded = "rgba(239,85,59, 0.2)" # Red
+COLOR_3_shaded = "rgba(0,204,150, 0.2)" # Green
+
 def set_seeds():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
@@ -80,15 +87,13 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
     )
     # Plot
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    shade_color_1 = "rgba(255,0,0,0.2)"
-    line_color_1 = "rgb(255,0,0)"
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_1,
+            line_color=COLOR_1_shaded,
             showlegend=False,
         )
     )
@@ -97,8 +102,8 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_1,
-            line_color=shade_color_1,
+            fillcolor=COLOR_1_shaded,
+            line_color=COLOR_1_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -108,7 +113,7 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_1, width=2),
+            line=dict(color=COLOR_1, width=2),
             name="Trigram loss",
         )
     )
@@ -124,16 +129,14 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
         .describe(percentiles=percentiles)
         .reset_index()
     )
-    # Plot
-    shade_color_2 = "rgba(0,128,255,0.2)"
-    line_color_2 = "rgb(0,128,255)"
+
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_2,
+            line_color=COLOR_2_shaded,
             showlegend=False,
         )
     )
@@ -142,8 +145,8 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_2,
-            line_color=shade_color_2,
+            fillcolor=COLOR_2_shaded,
+            line_color=COLOR_2_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -153,7 +156,7 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_2, width=2),
+            line=dict(color=COLOR_2, width=2),
             name="Ablation loss",
         )
     )
@@ -163,14 +166,13 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
         yaxis_title="Loss increase",
     )
 
-    line_color_3 = "rgb(255,128,0)"
     context_neuron_probe_df = probe_df[probe_df["NeuronLabel"] == "L3N669"].copy()
     fig.add_trace(
         go.Scatter(
             x=context_neuron_probe_df["Checkpoint"],
             y=context_neuron_probe_df["F1"],
             name="F1 score",
-            line=dict(color=line_color_3, width=2),
+            line=dict(color=COLOR_3, width=2),
         ),
         secondary_y=True,
     )
@@ -202,15 +204,13 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
     )
     # Plot
     fig = make_subplots()
-    shade_color_1 = "rgba(255,0,0,0.2)"
-    line_color_1 = "rgb(255,0,0)"
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_1,
+            line_color=COLOR_1_shaded,
             showlegend=False,
         )
     )
@@ -219,8 +219,8 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_1,
-            line_color=shade_color_1,
+            fillcolor=COLOR_1_shaded,
+            line_color=COLOR_1_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -230,7 +230,7 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_1, width=2),
+            line=dict(color=COLOR_1, width=2),
             name="Original loss",
         )
     )
@@ -247,15 +247,13 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
         .reset_index()
     )
     # Plot
-    shade_color_2 = "rgba(0,128,255,0.2)"
-    line_color_2 = "rgb(0,128,255)"
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_2,
+            line_color=COLOR_2_shaded,
             showlegend=False,
         )
     )
@@ -264,8 +262,8 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_2,
-            line_color=shade_color_2,
+            fillcolor=COLOR_2_shaded,
+            line_color=COLOR_2_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -275,7 +273,7 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_2, width=2),
+            line=dict(color=COLOR_2, width=2),
             name="Ablated loss",
         )
     )
@@ -323,10 +321,13 @@ def figure_3(probe_df, image_dir: Path) -> None:
     # Plot
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color='rgba(31,119,180,0.2)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor='rgba(31,119,180,0.2)', line_color='rgba(31,119,180,0.2)', showlegend=False))
-    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color='rgb(31,119,180)', width=2), name="Median of other<br>German neurons"))
-    fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color='#FF7F0E', width=2), name="L3N669"))
+    line_color = COLOR_1
+    shade_color = COLOR_1_shaded
+
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['5%'], fill=None, mode='lines', line_color=shade_color, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['95%'], fill='tonexty', fillcolor=shade_color, line_color=shade_color, showlegend=False))
+    fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color, width=2), name="Median of other<br>German neurons"))
+    fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color=COLOR_2, width=2), name="L3N669"))
     fig.update_layout(
         title=f"F1 scores of German neurons (N={num_neurons})", 
         xaxis_title="Checkpoint", 
@@ -361,7 +362,7 @@ def figure_4(ablation_df, image_dir: Path):
             y=grouped["0%"],
             fill=None,
             mode="lines",
-            line_color="rgba(31, 119, 180, 0.4)",
+            line_color=COLOR_1_shaded,
             showlegend=False,
         )
     )
@@ -370,8 +371,8 @@ def figure_4(ablation_df, image_dir: Path):
             x=grouped["Checkpoint"],
             y=grouped["100%"],
             fill="tonexty",
-            fillcolor="rgba(31, 119, 180, 0.2)",
-            line_color="rgba(31, 119, 180, 0.4)",
+            fillcolor=COLOR_1_shaded,
+            line_color=COLOR_1_shaded,
             showlegend=False,
         )
     )
@@ -380,7 +381,7 @@ def figure_4(ablation_df, image_dir: Path):
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color="#1F77B4", width=2),
+            line=dict(color=COLOR_1, width=2),
             name="Median of other<br>German neurons",
         )
     )
@@ -389,7 +390,7 @@ def figure_4(ablation_df, image_dir: Path):
             x=L3N669_df["Checkpoint"],
             y=L3N669_df["Loss Increase"],
             mode="lines",
-            line=dict(color="#FF7F0E", width=2),
+            line=dict(color=COLOR_2, width=2),
             name="L3N669",
         )
     )
@@ -445,15 +446,13 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
     )
     # Plot
     fig = make_subplots()
-    shade_color_1 = "rgba(255,127,14,0.2)"
-    line_color_1 = "rgb(255,127,14)"
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_1,
+            line_color=COLOR_1_shaded,
             showlegend=False,
         )
     )
@@ -462,8 +461,8 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_1,
-            line_color=shade_color_1,
+            fillcolor=COLOR_1_shaded,
+            line_color=COLOR_1_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -473,7 +472,7 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_1, width=2),
+            line=dict(color=COLOR_1, width=2),
             name="Original loss",
         )
     )
@@ -491,15 +490,13 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
         .reset_index()
     )
     # Plot
-    shade_color_2 = "rgba(0,128,255,0.2)"
-    line_color_2 = "rgb(0,128,255)"
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_2,
+            line_color=COLOR_2_shaded,
             showlegend=False,
         )
     )
@@ -508,8 +505,8 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_2,
-            line_color=shade_color_2,
+            fillcolor=COLOR_2_shaded,
+            line_color=COLOR_2_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -519,14 +516,9 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_2, width=2),
+            line=dict(color=COLOR_2, width=2),
             name="Indirect ablation loss",
         )
-    )
-    fig.update_layout(
-        xaxis_title="Checkpoint",
-        yaxis_title="Loss",
-        font=dict(size=24, family="Times New Roman, Times, serif"),
     )
 
     grouped = (
@@ -535,15 +527,13 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
         .reset_index()
     )
     # Plot
-    shade_color_2 = "rgba(214,39,40,0.2)"
-    line_color_2 = "rgb(214,39,40)"
     fig.add_trace(
         go.Scatter(
             x=grouped["Checkpoint"],
             y=grouped["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_2,
+            line_color=COLOR_3_shaded,
             showlegend=False,
         )
     )
@@ -552,8 +542,8 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["75%"],
             fill="tonexty",
-            fillcolor=shade_color_2,
-            line_color=shade_color_2,
+            fillcolor=COLOR_3_shaded,
+            line_color=COLOR_3_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -563,7 +553,7 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
             x=grouped["Checkpoint"],
             y=grouped["50%"],
             mode="lines",
-            line=dict(color=line_color_2, width=2),
+            line=dict(color=COLOR_3, width=2),
             name="Direct ablation loss",
         )
     )
@@ -571,7 +561,7 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
         title_text="Direct and indirect trigram ablation losses from ablating the German neuron",
         xaxis_title="Checkpoint",
         yaxis_title="Loss",
-        yaxis=dict(range=[0, 13]),
+        yaxis=dict(type='log'),
         font=dict(size=24, family="Times New Roman, Times, serif"),
     )
 
@@ -632,15 +622,13 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
 
     # Plot
     fig = make_subplots()
-    shade_color_1 = "rgba(255,127,14,0.2)"
-    line_color_1 = "rgb(255,127,14)"
     fig.add_trace(
         go.Scatter(
             x=grouped_trigram_loss["Checkpoint"],
             y=grouped_trigram_loss["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_1,
+            line_color=COLOR_1_shaded,
             showlegend=False,
         )
     )
@@ -649,8 +637,8 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
             x=grouped_trigram_loss["Checkpoint"],
             y=grouped_trigram_loss["75%"],
             fill="tonexty",
-            fillcolor=shade_color_1,
-            line_color=shade_color_1,
+            fillcolor=COLOR_1_shaded,
+            line_color=COLOR_1_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -660,7 +648,7 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
             x=grouped_trigram_loss["Checkpoint"],
             y=grouped_trigram_loss["50%"],
             mode="lines",
-            line=dict(color=line_color_1, width=2),
+            line=dict(color=COLOR_1, width=2),
             name="Trigram loss",
         )
     )
@@ -672,15 +660,13 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
     )
 
     # Plot
-    shade_color_2 = "rgba(0,128,255,0.2)"
-    line_color_2 = "rgb(0,128,255)"
     fig.add_trace(
         go.Scatter(
             x=grouped_german_loss["Checkpoint"],
             y=grouped_german_loss["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_2,
+            line_color=COLOR_2_shaded,
             showlegend=False,
         )
     )
@@ -689,8 +675,8 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
             x=grouped_german_loss["Checkpoint"],
             y=grouped_german_loss["75%"],
             fill="tonexty",
-            fillcolor=shade_color_2,
-            line_color=shade_color_2,
+            fillcolor=COLOR_2_shaded,
+            line_color=COLOR_2_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -700,7 +686,7 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
             x=grouped_german_loss["Checkpoint"],
             y=grouped_german_loss["50%"],
             mode="lines",
-            line=dict(color=line_color_2, width=2),
+            line=dict(color=COLOR_2, width=2),
             name="German loss",
         )
     )
@@ -711,15 +697,13 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
     )
 
     # Plot
-    shade_color_2 = "rgba(214,39,40,0.2)"
-    line_color_2 = "rgb(214,39,40)"
     fig.add_trace(
         go.Scatter(
             x=grouped_english_loss["Checkpoint"],
             y=grouped_english_loss["25%"],
             fill=None,
             mode="lines",
-            line_color=shade_color_2,
+            line_color=COLOR_3_shaded,
             showlegend=False,
         )
     )
@@ -728,8 +712,8 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
             x=grouped_english_loss["Checkpoint"],
             y=grouped_english_loss["75%"],
             fill="tonexty",
-            fillcolor=shade_color_2,
-            line_color=shade_color_2,
+            fillcolor=COLOR_3_shaded,
+            line_color=COLOR_3_shaded,
             name="25th-75th percentile",
             showlegend=False,
         )
@@ -739,7 +723,7 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
             x=grouped_english_loss["Checkpoint"],
             y=grouped_english_loss["50%"],
             mode="lines",
-            line=dict(color=line_color_2, width=2),
+            line=dict(color=COLOR_3, width=2),
             name="English loss",
         )
     )
