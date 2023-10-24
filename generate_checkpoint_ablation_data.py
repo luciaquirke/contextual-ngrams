@@ -5,6 +5,7 @@ import os
 import gzip
 from pathlib import Path
 from collections import Counter
+from typing import Callable, Any
 
 import pandas as pd
 import numpy as np
@@ -75,7 +76,7 @@ def get_ngram_losses(
     checkpoint: int,
     ngrams: list[str],
     common_tokens: list[str],
-    fwd_hooks: list[tuple[str, callable]],
+    fwd_hooks: list[tuple[str, Callable]],
 ) -> pd.DataFrame:
     data = []
     for ngram in ngrams:
@@ -94,7 +95,7 @@ def get_ngram_losses(
 
 def get_common_ngrams(
     model: HookedTransformer, prompts: list[str], n: int, top_k=100
-) -> list[str]:
+) -> list[tuple[Any, int]]:
     """
     n: n-gram length
     top_k: number of n-grams to return
@@ -177,36 +178,11 @@ def build_dfs(
 
     model = get_model(model_name, 0)
 
-    # common_tokens = get_common_tokens(model, german_data)
-    # random_trigrams = get_random_trigrams(model, german_data)
-    # end_prompt = " Vorschlägen"
-    # vorschlagen_prompts = utils.generate_random_prompts(end_prompt, model, common_tokens, 500, length=20)
-
     good_neurons = get_good_f1_neurons(probe_df)
-
-    # ngram_loss_dfs = []
-    # context_neuron_data = []
-    # logit_attrs = []
     good_neuron_ablation_data = []
-
-    # deactivate_neurons_fwd_hooks = get_deactivate_neurons_fwd_hooks(model, german_data, layer, neuron)
 
     for checkpoint in tqdm(range(num_checkpoints)):
         model = get_model(model_name, checkpoint)
-
-        # ngram_loss_dfs.append(
-        #     get_ngram_losses(model, checkpoint, random_trigrams, common_tokens, deactivate_neurons_fwd_hooks)
-        # )
-
-        # data = eval_checkpoint(model, probe_df, german_data, checkpoint, layer, neuron)
-        # with model.hooks(deactivate_neurons_fwd_hooks):
-        #     german_ablated_loss = eval_loss(model, german_data)
-        # non_german_loss = eval_loss(model, non_german_data)
-        # data.extend([german_ablated_loss, non_german_loss])
-        # context_neuron_data.append(data)
-
-        # logit_attribution, labels = utils.pos_batch_DLA(vorschlagen_prompts, model)
-        # logit_attrs.append(logit_attribution.cpu().numpy())
 
         for neuron_name in good_neurons:
             good_layer, good_neuron = neuron_name[1:].split("N")
@@ -227,9 +203,6 @@ def build_dfs(
                 [neuron_name, checkpoint, original_loss, ablated_loss]
             )
 
-    # context_neuron_df = pd.DataFrame(context_neuron_data, columns=["Checkpoint", "GermanLoss", "F1", "MCC", 'german_ablation_loss', 'non_german_ablation_loss'])
-    # context_neuron_df.to_csv(save_path.joinpath("checkpoint_eval.csv"), index=False)
-
     good_neuron_ablation_df = pd.DataFrame(
         good_neuron_ablation_data,
         columns=["Label", "Checkpoint", "OriginalLoss", "AblatedLoss"],
@@ -238,28 +211,6 @@ def build_dfs(
         good_neuron_ablation_df["AblatedLoss"] - good_neuron_ablation_df["OriginalLoss"]
     )
     good_neuron_ablation_df.to_csv("data/checkpoint_ablation_data.csv")
-
-    # logit_attrs_df = pd.DataFrame()
-    # for i, logit_attribution in enumerate(logit_attrs):
-    #     temp_df = pd.DataFrame()
-    #     temp_df['logit_attribution'] = logit_attribution
-    #     temp_df['checkpoint'] = [i] * len(logit_attribution)
-    #     temp_df['index'] = range(len(logit_attribution))
-    #     logit_attrs_df = pd.concat([logit_attrs_df, temp_df])
-
-    # Compress with gzip using high compression and save
-    with gzip.open(
-        save_path.joinpath("checkpoint_ablation_data.pkl.gz"), "wb", compresslevel=9
-    ) as f_out:
-        pickle.dump(
-            {
-                # "ctx_neuron": context_neuron_df,
-                "good_neuron": good_neuron_ablation_df,
-                # "ngram": ngram_loss_dfs,
-                # "logit_attr": logit_attrs_df,
-            },
-            f_out,
-        )
 
 
 def get_good_f1_neurons(probe_df: pd.DataFrame):

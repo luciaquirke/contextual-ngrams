@@ -52,7 +52,7 @@ def get_all_non_letter_tokens(model: HookedTransformer):
     return torch.LongTensor(letter_tokens)
 
 
-def process_data(model_name: str, save_path: Path, image_path: Path, data_path: Path):
+def process_data(model_name: str, save_path: Path, data_path: Path):
     model = get_model(model_name, 0)
     num_checkpoints = preload_models(model_name)
     lang_data = load_language_data(data_path)
@@ -63,10 +63,10 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
         list(set(all_ignore.tolist()).union(set(non_letter_tokens.tolist())))
     )
     german_counts, german_tokens = get_common_tokens(
-        lang_data["de"], model, ignore_and_non_letter, k=200, return_counts=True
+        lang_data["de"], model, ignore_and_non_letter, k=200
     )
     english_counts, english_tokens = get_common_tokens(
-        lang_data["en"], model, ignore_and_non_letter, k=200, return_counts=True
+        lang_data["en"], model, ignore_and_non_letter, k=200
     )
 
     probe_df = load_probe_data(save_path)
@@ -106,66 +106,6 @@ def process_data(model_name: str, save_path: Path, image_path: Path, data_path: 
         pickle.dump(dla_df, f)
 
 
-def viz(model_name: str, save_path: Path, image_path: Path, data_path: Path):
-    with open("dla_df_all.pkl", "rb") as f:
-        dla_df_all_neurons = pickle.load(f)
-
-    dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Line(
-            x=dla_df["Checkpoint"],
-            y=dla_df["DLA diff"],
-            mode="lines",
-            line=dict(color="#FF7F0E", width=2),
-            name="L3N669",
-        )
-    )
-
-    dla_df["DLA Difference"] = dla_df["DLA diff"]
-    fig = px.line(
-        dla_df,
-        x="Checkpoint",
-        y="DLA Difference",
-        color="Neuron",
-        title="Difference between average DLA of frequent German and English tokens",
-    )
-    fig.update_layout(
-        font=dict(size=24, family="Times New Roman, Times, serif"), width=2000
-    )
-    fig.write_image(image_path.joinpath("dla_diff.png"))
-
-    dla_df = dla_df_all_neurons[dla_df_all_neurons["Neuron"].isin(["L3N669"])]
-    dla_df["DLA Difference"] = dla_df["DLA diff"]
-
-    fig = go.Figure()
-    fig.add_trace(
-        go.Line(
-            x=dla_df["Checkpoint"],
-            y=dla_df["English DLA"],
-            mode="lines",
-            name="German DLA",
-        )
-    )
-    fig.add_trace(
-        go.Line(
-            x=dla_df["Checkpoint"],
-            y=dla_df["German DLA"],
-            mode="lines",
-            name="English DLA",
-        )
-    )
-    fig.update_layout(
-        font=dict(size=24, family="Times New Roman, Times, serif"),
-        width=2000,
-        title="Average DLA of L3N669 on frequent German and English tokens",
-        xaxis_title="Checkpoint",
-        yaxis_title="DLA",
-    )
-    fig.write_image(image_path.joinpath("dla_german_english.png"))
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -181,10 +121,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     save_path = os.path.join(args.output_dir, args.model)
-    save_image_path = os.path.join(save_path, "images")
-
     os.makedirs(save_path, exist_ok=True)
-    os.makedirs(save_image_path, exist_ok=True)
 
-    # process_data(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
-    viz(args.model, Path(save_path), Path(save_image_path), Path(args.data_dir))
+    process_data(args.model, Path(save_path), Path(args.data_dir))

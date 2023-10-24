@@ -38,12 +38,14 @@ def set_seeds():
 def train_probe(
     positive_data: torch.Tensor, negative_data: torch.Tensor
 ) -> tuple[float, float]:
-    def get_probe(x: np.array, y: np.array, max_iter=5000) -> LogisticRegression:
+    def get_probe(x: np.ndarray, y: np.ndarray, max_iter=5000) -> LogisticRegression:
         lr_model = LogisticRegression(max_iter=max_iter)
         lr_model.fit(x, y)
         return lr_model
 
-    def get_probe_score(lr_model: LogisticRegression, x: np.array, y: np.array) -> tuple[float, float]:
+    def get_probe_score(
+        lr_model: LogisticRegression, x: np.ndarray, y: np.ndarray
+    ) -> tuple[float, float]:
         preds = lr_model.predict(x)
         f1 = f1_score(y, preds)
         mcc = matthews_corrcoef(y, preds)
@@ -62,7 +64,7 @@ def train_probe(
 
 
 def save_activation(value, hook):
-    hook.ctx['activation'] = value
+    hook.ctx["activation"] = value
     return value
 
 
@@ -78,8 +80,7 @@ def get_mlp_activations(
             act = model.hook_dict[act_label].ctx["activation"][:, 10:400, :]
         act = einops.rearrange(act, "batch pos n_neurons -> (batch pos) n_neurons")
         acts.append(act)
-    acts = torch.concat(acts, dim=0)
-    return acts
+    return torch.concat(acts, dim=0)
 
 
 def zero_ablate_hook(value, hook):
@@ -184,7 +185,7 @@ def analyze_features(
     lang_data: dict,
     output_dir: Path,
 ) -> None:
-    """Collect several dataframes covering whole layer ablation losses, losses on Europarl languages, 
+    """Collect several dataframes covering whole layer ablation losses, losses on Europarl languages,
     and 1-sparse neuron probe performances."""
     model = get_model(model_name, 0)
     n_layers = model.cfg.n_layers
@@ -193,41 +194,29 @@ def analyze_features(
     non_german_data = lang_data["en"]
 
     probe_dfs = []
-    # layer_ablation_dfs = []
-    # lang_loss_dfs = []
     with tqdm(total=num_checkpoints * n_layers) as pbar:
         for checkpoint in range(num_checkpoints):
-            model = get_model(model_name, checkpoint)            
+            model = get_model(model_name, checkpoint)
             for layer in range(n_layers):
                 partial_probe_df = get_layer_probe_performance(
                     model, checkpoint, layer, german_data, non_german_data
                 )
                 probe_dfs.append(partial_probe_df)
-
-                # partial_layer_ablation_df = get_layer_ablation_loss(
-                #     model, german_data, checkpoint, layer
-                # )
-                # layer_ablation_dfs.append(partial_layer_ablation_df)
-
                 pbar.update(1)
-                
-            # lang_loss_dfs.append(get_language_losses(model, checkpoint, lang_data))
 
             # Save progress to allow for checkpointing the analysis
             with open(
                 output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "wb"
             ) as f:
                 pickle.dump(
-                    {
-                        "probe": probe_dfs,
-                        # "layer_ablation": layer_ablation_dfs,
-                        # "lang_loss": lang_loss_dfs,
-                    },
+                    {"probe": probe_dfs},
                     f,
                 )
 
     # Open the pickle file
-    with open(output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb") as f:
+    with open(
+        output_dir.joinpath(model_name + "_checkpoint_features.pkl.gz"), "rb"
+    ) as f:
         data = pickle.load(f)
 
     # Concatenate the dataframes
@@ -237,17 +226,7 @@ def analyze_features(
     with gzip.open(
         output_dir.joinpath("checkpoint_probe_df.pkl.gz"), "wb", compresslevel=9
     ) as f:
-        pickle.dump(data['probe'], f)
-
-    # with gzip.open(
-    #     output_dir.joinpath("checkpoint_lang_loss_df.pkl.gz"), "wb", compresslevel=9
-    # ) as f:
-    #     pickle.dump(data['lang_loss'], f)
-
-    # with gzip.open(
-    #     output_dir.joinpath("checkpoint_layer_ablation_df.pkl.gz"), "wb", compresslevel=9
-    # ) as f:
-    #     pickle.dump(data['layer_ablation'], f)
+        pickle.dump(data["probe"], f)
 
 
 if __name__ == "__main__":
@@ -275,9 +254,5 @@ if __name__ == "__main__":
 
     # Load probe training data
     lang_data = load_language_data(Path(args.dataset_dir))
-    
-    analyze_features(
-        args.model, num_checkpoints, lang_data, Path(save_path)
-    )
 
-
+    analyze_features(args.model, num_checkpoints, lang_data, Path(save_path))

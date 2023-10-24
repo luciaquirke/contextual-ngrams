@@ -13,6 +13,7 @@ import ipywidgets as widgets
 from IPython.display import display, HTML
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from neel_plotly import *
 from utils import get_model
@@ -75,6 +76,7 @@ def process_data(model_name: str, output_dir: Path, image_dir: Path) -> None:
     figure_6(context_effect_df, num_trigrams, image_dir)
     figure_7(dla_all_df, image_dir)
     figure_8(context_effect_df, loss_df, image_dir)
+
 
 def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) -> None:
     """Trigram evaluation, ablation loss, and German neuron F1 score over training"""
@@ -178,7 +180,7 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
     )
     # Set y-axes titles
     fig.update_yaxes(title_text="Loss", secondary_y=False)
-    fig.update_yaxes(title_text="", secondary_y=True)
+    fig.update_yaxes(title_text="F1 score", secondary_y=True)
 
     fig.update_layout(
         title_text="Trigram evaluation, ablation loss, and German neuron F1 score over training"
@@ -187,11 +189,12 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
         # yaxis=dict(type='log'),
         # yaxis2=dict(type='linear')
         yaxis=dict(range=[0, 11.8]),
-        yaxis2=dict(range=[0, 1.18]),
+        yaxis2=dict(range=[0, 1.18], title="F1 score"),
         font=dict(size=24, family="Times New Roman, Times, serif"),
     )
 
     fig.write_image(image_dir.joinpath("figure_1.png"), width=FIGURE_WIDTH)
+
 
 def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
     """Contextual trigram losses with and without ablating the German neuron"""
@@ -295,6 +298,7 @@ def figure_2(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
 
     fig.write_image(image_dir.joinpath("figure_2.png"), width=FIGURE_WIDTH)
 
+
 def figure_3(probe_df, image_dir: Path) -> None:
     """F1 scores of German neurons"""
     accurate_f1_neurons = probe_df[
@@ -310,13 +314,24 @@ def figure_3(probe_df, image_dir: Path) -> None:
     good_f1_neurons = accurate_f1_neurons["NeuronLabel"].unique()
 
     # Melt the DataFrame
-    probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_f1_neurons)].melt(id_vars=['Checkpoint'], var_name='NeuronLabel', value_vars="F1", value_name='F1 score')
-    probe_df_melt['F1 score'] = pd.to_numeric(probe_df_melt['F1 score'], errors='coerce')
+    probe_df_melt = probe_df[probe_df["NeuronLabel"].isin(good_f1_neurons)].melt(
+        id_vars=["Checkpoint"],
+        var_name="NeuronLabel",
+        value_vars="F1",
+        value_name="F1 score",
+    )
+    probe_df_melt["F1 score"] = pd.to_numeric(
+        probe_df_melt["F1 score"], errors="coerce"
+    )
 
     # Calculate percentiles at each x-coordinate
     percentiles = [0.05, 0.5, 0.95]
-    
-    grouped = probe_df_melt.groupby('Checkpoint')['F1 score'].describe(percentiles=percentiles).reset_index()
+
+    grouped = (
+        probe_df_melt.groupby("Checkpoint")["F1 score"]
+        .describe(percentiles=percentiles)
+        .reset_index()
+    )
     L3N669_df = probe_df[probe_df["NeuronLabel"] == "L3N669"]
     # Plot
     fig = go.Figure()
@@ -329,13 +344,15 @@ def figure_3(probe_df, image_dir: Path) -> None:
     fig.add_trace(go.Scatter(x=grouped['Checkpoint'], y=grouped['50%'], mode='lines', line=dict(color=line_color, width=2), name="Median of other<br>German neurons"))
     fig.add_trace(go.Scatter(x=L3N669_df['Checkpoint'], y=L3N669_df['F1'], mode='lines', line=dict(color=COLOR_2, width=2), name="L3N669"))
     fig.update_layout(
-        title=f"F1 scores of German neurons (N={num_neurons})", 
-        xaxis_title="Checkpoint", 
-        yaxis_title="F1 score", 
-        font=dict(size=24, family="Times New Roman, Times, serif"))
+        title=f"F1 scores of German neurons (N={num_neurons})",
+        xaxis_title="Checkpoint",
+        yaxis_title="F1 score",
+        font=dict(size=24, family="Times New Roman, Times, serif"),
+    )
 
     # FIGURE 3
     fig.write_image(image_dir.joinpath("figure_3.png"), width=FIGURE_WIDTH)
+
 
 def figure_4(ablation_df, image_dir: Path):
     """Loss increase on German text when ablating context neurons"""
@@ -402,9 +419,8 @@ def figure_4(ablation_df, image_dir: Path):
         font=dict(size=24, family="Times New Roman, Times, serif"),
     )
 
-    fig.write_image(
-        image_dir.joinpath("figure_4.png"), width=FIGURE_WIDTH
-    )
+    fig.write_image(image_dir.joinpath("figure_4.png"), width=FIGURE_WIDTH)
+
 
 def figure_5(split_effect_df, image_dir: Path):
     """Direct and indirect ablation effect of L3N669 on German text"""
@@ -412,7 +428,7 @@ def figure_5(split_effect_df, image_dir: Path):
     # Direct ablation loss = loss when running the model with indirect effect
     split_effect_df["Direct ablation loss"] = split_effect_df["Indirect Effect"]
     split_effect_df["Indirect ablation loss"] = split_effect_df["Direct Effect"]
-    
+
     melt_df = split_effect_df.melt(
         id_vars=["Checkpoint"],
         var_name="Type",
@@ -431,9 +447,10 @@ def figure_5(split_effect_df, image_dir: Path):
         yaxis_title="Loss increase",
         font=dict(size=24, family="Times New Roman, Times, serif"),
     )
-    fig.update_layout(legend={'title_text':''})
+    fig.update_layout(legend={"title_text": ""})
 
     fig.write_image(image_dir.joinpath("figure_5.png"), width=FIGURE_WIDTH)
+
 
 def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
     """Direct and indirect trigram ablation losses from ablating the German neuron"""
@@ -565,9 +582,8 @@ def figure_6(context_effect_df, num_trigrams: int, image_dir: Path) -> None:
         font=dict(size=24, family="Times New Roman, Times, serif"),
     )
 
-    fig.write_image(
-        image_dir.joinpath("figure_6.png"), width=FIGURE_WIDTH
-    )
+    fig.write_image(image_dir.joinpath("figure_6.png"), width=FIGURE_WIDTH)
+
 
 def figure_7(dla_all_df, image_dir):
     """Average DLA of German neuron on frequent German and English tokens"""
@@ -599,6 +615,7 @@ def figure_7(dla_all_df, image_dir):
         yaxis_title="DLA",
     )
     fig.write_image(image_dir.joinpath("figure_7.png"))
+
 
 def figure_8(context_effect_df, loss_df, image_dir: Path):
     """Model loss on German text, English text, and contextual trigrams"""
@@ -736,6 +753,7 @@ def figure_8(context_effect_df, loss_df, image_dir: Path):
     )
 
     fig.write_image(image_dir.joinpath("figure_8.png"), width=FIGURE_WIDTH)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

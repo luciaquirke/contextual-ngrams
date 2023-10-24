@@ -27,7 +27,7 @@ from utils import (
     get_common_tokens,
     generate_random_prompts,
     get_weird_tokens,
-    get_device
+    get_device,
 )
 
 device = get_device()
@@ -46,7 +46,9 @@ def set_seeds():
     random.seed(SEED)
 
 
-def load_data(model_name: str, output_dir: Path, data_dir: Path) -> None:
+def load_data(
+    model_name: str, output_dir: Path, data_dir: Path
+) -> tuple[pd.DataFrame, list, list]:
     set_seeds()
     model = get_model(model_name, 0)
     with open(output_dir.joinpath("checkpoint_probe_df.pkl"), "rb") as f:
@@ -231,7 +233,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     save_path = os.path.join(args.output_dir, args.model)
-
     os.makedirs(save_path, exist_ok=True)
 
     process_data(args.model, Path(save_path), Path(args.data_dir))
