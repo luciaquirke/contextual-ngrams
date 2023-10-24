@@ -188,7 +188,7 @@ def figure_1(probe_df, context_effect_df, num_trigrams: int, image_dir: Path) ->
         # yaxis=dict(type='log'),
         # yaxis2=dict(type='linear')
         yaxis=dict(range=[0, 11.8]),
-        yaxis2=dict(range=[0, 1.18]),
+        yaxis2=dict(range=[0, 1.18], title="F1 score"),
         font=dict(size=24, family="Times New Roman, Times, serif"),
     )
 
